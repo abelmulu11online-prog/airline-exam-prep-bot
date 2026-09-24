@@ -296,7 +296,7 @@ The prepared local development database connection is:
 | Property | Value |
 | --- | --- |
 | Host | `127.0.0.1` |
-| Port | `1621` |
+| Port | `5432` |
 | Database | `airline_exam_bot` |
 | User | `airline_exam_user` |
 

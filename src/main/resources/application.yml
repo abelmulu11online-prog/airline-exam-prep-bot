@@ -2,7 +2,7 @@ spring:
   application:
     name: airline-exam-prep-bot
   datasource:
-    url: jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:1621}/${DB_NAME:airline_exam_bot}
+    url: jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:5432}/${DB_NAME:airline_exam_bot}
     username: ${DB_USERNAME:airline_exam_user}
     password: ${DB_PASSWORD}
     hikari:
@@ -46,3 +46,10 @@ management:
 logging:
   level:
     root: INFO
+    jdk.httpclient.HttpClient: OFF
+    jdk.internal.net.http: OFF
+
+telegram:
+  bot:
+    enabled: ${TELEGRAM_BOT_ENABLED:false}
+    token: ${TELEGRAM_BOT_TOKEN:}

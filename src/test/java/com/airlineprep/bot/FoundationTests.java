@@ -6,6 +6,8 @@ import java.util.UUID;
 import javax.sql.DataSource;
 
 import jakarta.persistence.EntityManagerFactory;
+import com.airlineprep.bot.telegram.TelegramBotClient;
+import com.airlineprep.bot.telegram.TelegramLongPollingService;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,6 +56,8 @@ class FoundationTests {
         registry.add("spring.flyway.url", () -> url);
         registry.add("spring.flyway.user", () -> "sa");
         registry.add("spring.flyway.password", () -> "");
+        registry.add("telegram.bot.enabled", () -> false);
+        registry.add("telegram.bot.token", () -> "");
     }
 
     @Test
@@ -87,5 +91,11 @@ class FoundationTests {
     @Test
     void noGeneratedLoginUserExists() {
         assertThat(context.getBeansOfType(UserDetailsService.class)).isEmpty();
+    }
+
+    @Test
+    void telegramDisabledLoadsWithoutTokenOrNetworkComponents() {
+        assertThat(context.getBeansOfType(TelegramBotClient.class)).isEmpty();
+        assertThat(context.getBeansOfType(TelegramLongPollingService.class)).isEmpty();
     }
 }
