@@ -4,7 +4,7 @@
 
 This document is the source of truth for subsequent development of the airline written-exam preparation platform. Read it completely before changing the project. Explicitly agreed requirement changes must be reflected here rather than silently changing product behavior.
 
-The current milestone is **Phase 1: documentation and architecture specification only**. This document describes intended behavior; it does not claim that any feature exists. No application code, build files, migrations, database connections, Telegram integration, payment implementation, or deployment belongs in Phase 1. Stop after completing this specification; Phase 2 requires a separate instruction.
+The current milestone is **Compressed Phase 4: User & Admin Foundation**, authorized after the verified Phase 1–3 baseline. It combines registration, verified phone identity, entitlement snapshots, admin security/dashboard, settings, and exam taxonomy. Phase 1 originally delivered this specification only; the requirements below still describe the full product, not a claim that later features exist.
 
 Requirements below are planned Version 1 capabilities unless labeled optional, future, or a decision to resolve. Implement only the structures needed by the active phase.
 
@@ -320,6 +320,20 @@ The following are not required for Version 1: React admin frontend, Flutter or R
 
 ## 15. Development roadmap
 
+The explicitly authorized compressed roadmap supersedes the scheduling of the original small phases below: **Compressed Phase 4** combines original Phases 4–8 (registration, entitlement foundation, admin, settings, exam types/categories). **Compressed Phase 5** is Question Bank & Content Management. Later compressed phases are not implemented or newly specified here. The original roadmap is retained as architectural history; its phase numbering does not prohibit the authorized combined scope.
+
+### Compressed Phase 4 decisions
+
+- Persist resumable private-chat onboarding in English and Amharic. Request only the sender's own Telegram contact. Do not retain raw phone or unnecessary Telegram names.
+- Normalize Ethiopian mobile numbers starting with 07/09 or international +2517/+2519 (also 251 without plus); accept spaces, parentheses, and hyphens as separators, reject other country codes/prefixes/lengths/letters.
+- HMAC-SHA256 with an environment-supplied, stable Base64 key of at least 32 random bytes identifies the phone. Keep a keyed configuration fingerprint to detect accidental key changes. Key rotation requires a separate identity-preserving migration; recovery never silently transfers accounts or issues another free grant.
+- Registration completion and a single free entitlement commit atomically. A short database settings-row lock serializes onboarding writes and offer/taxonomy edits; unique Telegram IDs, phone hashes, and user grants enforce integrity independently. No network call runs under that lock.
+- Initial offer and lifetime-price defaults remain unchanged. Grant snapshots include mock size and independent zeroed usage counters, without expiry. Consumption and payment workflows are deferred.
+- Initial admin provisioning uses optional environment credentials, stores BCrypt only, and never resets existing passwords on restart. Admin forms use sessions, CSRF, validation, and Post/Redirect/Get. Settings and taxonomy mutations preserve actor/time/before/after audit context.
+- Exam types/categories support create/edit/activation/deactivation, with no destructive delete routes. Registration uses only active exam types and rechecks deactivation before completion. No preconfigured exam types are required to start safely.
+
+### Original incremental roadmap (historical)
+
 | Phase | Scope |
 | --- | --- |
 | 0 | Environment and account setup |
@@ -387,7 +401,7 @@ Phase 2 must not implement Telegram, registration, questions, practice, mocks, p
 
 These decisions do not block the Phase 2 technical foundation and must not be filled with invented product features:
 
-- Registration: Ethiopian phone normalization edge cases, HMAC adoption/key management, and recovery policy for a previously claimed phone identity.
+- Registration: controlled HMAC key rotation and recovery policy for a previously claimed phone identity. Normalization, HMAC adoption, and stable-key requirements are defined in the compressed Phase 4 decisions above.
 - Questions/practice/progress: precise logical-question quota identity across versions, repeat-answer metric definitions, review after exhaustion, and free-user explanation/history scope.
 - Mock engine: blueprint interaction with registration-time mock size, minimum pool requirements, concurrent/abandoned attempts, selection policy, and optional timing/scoring details.
 - Payments: request/submission state transitions, reference uniqueness/normalization by method, resubmissions, pending-request reuse/expiry, and pending handling when payments are disabled.

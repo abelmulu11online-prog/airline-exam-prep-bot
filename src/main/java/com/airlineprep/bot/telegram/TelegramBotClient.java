@@ -35,7 +35,7 @@ public class TelegramBotClient {
 
     public JsonNode getUpdates(long offset) throws InterruptedException {
         JsonNode updates = request("getUpdates", Map.of(
-                "offset", offset, "timeout", 25, "limit", 20, "allowed_updates", List.of("message")));
+                "offset", offset, "timeout", 25, "limit", 20, "allowed_updates", List.of("message", "callback_query")));
         if (!updates.isArray()) {
             throw new ApiException(0, 0);
         }
@@ -43,7 +43,16 @@ public class TelegramBotClient {
     }
 
     public void sendMessage(long chatId, String text) throws InterruptedException {
-        JsonNode message = request("sendMessage", Map.of("chat_id", chatId, "text", text));
+        sendMessage(chatId, text, Map.of());
+    }
+
+    public void answerCallbackQuery(String callbackId) throws InterruptedException {
+        JsonNode result = request("answerCallbackQuery", Map.of("callback_query_id", callbackId));
+        if (!result.isBoolean() || !result.booleanValue()) throw new ApiException(0, 0);
+    }
+
+    public void sendMessage(long chatId, String text, Map<String, ?> markup) throws InterruptedException {
+        JsonNode message = request("sendMessage", Map.of("chat_id", chatId, "text", text, "reply_markup", markup));
         if (!message.isObject() || !message.path("message_id").isIntegralNumber()) {
             throw new ApiException(0, 0);
         }

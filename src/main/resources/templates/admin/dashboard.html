@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Overview')}"></head>
+<body><header th:replace="~{admin/fragments :: header}"></header>
+<div class="shell"><nav th:replace="~{admin/fragments :: nav}"></nav><main>
+<p class="eyebrow">PLATFORM OVERVIEW</p><h1>A clear view of your platform.</h1>
+<p class="muted">Manage registration, access defaults, and exam organization.</p>
+<div class="metrics">
+    <section class="metric"><span>Total users</span><strong th:text="${users}">0</strong></section>
+    <section class="metric"><span>Completed registrations</span><strong th:text="${completed}">0</strong></section>
+    <section class="metric"><span>Active exam types</span><strong th:text="${exams}">0</strong></section>
+    <section class="metric"><span>Categories</span><strong th:text="${categories}">0</strong></section>
+</div>
+<section class="panel"><div class="section-title"><h2>Current free offer</h2><a th:href="@{/admin/settings}">Edit settings →</a></div>
+<div class="offer"><div><strong th:text="${settings.freePracticeLimit}">100</strong><span>unique practice questions</span></div>
+<div><strong th:text="${settings.freeMockLimit}">2</strong><span>mock exams</span></div>
+<div><strong th:text="${settings.questionsPerMock}">50</strong><span>questions per mock</span></div></div>
+<p class="fine">No time expiration. Changes apply only to future registrations.</p></section>
+<section class="panel"><h2>Lifetime access price</h2><p class="price"><span th:text="${settings.lifetimePrice}">50</span> <span th:text="${settings.currency}">ETB</span></p>
+<p class="muted">Price configuration is available. Payments, questions, and exams will be introduced in later phases.</p></section>
+</main></div></body></html>

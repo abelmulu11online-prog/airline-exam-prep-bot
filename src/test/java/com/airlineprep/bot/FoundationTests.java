@@ -58,6 +58,9 @@ class FoundationTests {
         registry.add("spring.flyway.password", () -> "");
         registry.add("telegram.bot.enabled", () -> false);
         registry.add("telegram.bot.token", () -> "");
+        registry.add("registration.phone-hmac-key", () -> "");
+        registry.add("admin.bootstrap.username", () -> "");
+        registry.add("admin.bootstrap.password", () -> "");
     }
 
     @Test
@@ -81,7 +84,7 @@ class FoundationTests {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/", "/admin", "/login", "/actuator/env", "/actuator/info"})
+    @ValueSource(strings = {"/", "/login", "/actuator/env", "/actuator/info"})
     void otherRoutesAreDeniedWithoutLoginRedirect(String path) throws Exception {
         mvc.perform(get(path))
                 .andExpect(status().isForbidden())
@@ -89,8 +92,10 @@ class FoundationTests {
     }
 
     @Test
-    void noGeneratedLoginUserExists() {
-        assertThat(context.getBeansOfType(UserDetailsService.class)).isEmpty();
+    void persistedAdminAuthenticationReplacesGeneratedLoginUser() {
+        assertThat(context.getBeansOfType(UserDetailsService.class)).hasSize(1);
+        assertThat(context.getBean(UserDetailsService.class))
+                .isInstanceOf(com.airlineprep.bot.admin.AdminAuthentication.class);
     }
 
     @Test

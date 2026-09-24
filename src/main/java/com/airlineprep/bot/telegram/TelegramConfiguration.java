@@ -38,8 +38,9 @@ public class TelegramConfiguration {
         }
 
         @Bean
-        TelegramUpdateHandler telegramUpdateHandler(TelegramBotClient client, MessageSource messages) {
-            return new TelegramUpdateHandler(client, messages);
+        TelegramUpdateHandler telegramUpdateHandler(TelegramBotClient client, MessageSource messages,
+                com.airlineprep.bot.user.RegistrationService registration) {
+            return new TelegramUpdateHandler(client, registration, new RegistrationPresenter(client, messages));
         }
 
         @Bean

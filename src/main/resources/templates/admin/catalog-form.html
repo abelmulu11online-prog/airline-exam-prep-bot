@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${title})}"></head>
+<body><header th:replace="~{admin/fragments :: header}"></header><div class="shell">
+<nav th:replace="~{admin/fragments :: nav}"></nav><main>
+<a th:href="@{/admin/{kind}(kind=${kind})}" class="back">← Back to list</a><h1 th:text="${title}">Catalog</h1>
+<form class="panel" th:action="@{${action}}" th:object="${form}" method="post">
+<div class="notice error" th:if="${#fields.hasErrors('*')}" role="alert"><p th:each="error : ${#fields.errors('*')}" th:text="${error}"></p></div>
+<div th:if="${kind == 'categories'}"><label for="exam">Exam type</label><select id="exam" th:field="*{examTypeId}" required><option value="">Choose exam type</option>
+<option th:each="exam : ${examChoices}" th:value="${exam.id}" th:text="${exam.name}"></option></select></div>
+<div class="form-grid"><div><label for="name">English name</label><input id="name" th:field="*{name}" maxlength="100" required></div>
+<div><label for="nameAm">Amharic name (optional)</label><input id="nameAm" th:field="*{nameAm}" maxlength="100"></div></div>
+<div class="form-grid"><div><label for="code">Code</label><input id="code" th:field="*{code}" maxlength="40" pattern="[a-z0-9][a-z0-9-]{0,39}" required><p class="fine">Lowercase letters, numbers, and hyphens.</p></div>
+<div><label for="order">Display order</label><input id="order" type="number" min="0" th:field="*{displayOrder}" required></div></div>
+<label class="check"><input type="checkbox" th:field="*{active}"> Active</label>
+<button class="primary" type="submit">Save changes</button>
+</form></main></div></body></html>

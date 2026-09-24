@@ -1,44 +1,70 @@
 package com.airlineprep.bot.telegram;
 
-import java.util.Locale;
-
+import com.airlineprep.bot.user.RegistrationService;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.MessageSource;
+import org.springframework.dao.DataAccessException;
+import org.springframework.transaction.TransactionException;
 
 public class TelegramUpdateHandler {
-
     private static final Logger log = LoggerFactory.getLogger(TelegramUpdateHandler.class);
-
     private final TelegramBotClient client;
-    private final MessageSource messages;
+    private final RegistrationService registration;
+    private final RegistrationPresenter presenter;
 
-    public TelegramUpdateHandler(TelegramBotClient client, MessageSource messages) {
-        this.client = client;
-        this.messages = messages;
+    public TelegramUpdateHandler(TelegramBotClient client, RegistrationService registration,
+                                 RegistrationPresenter presenter) {
+        this.client = client; this.registration = registration; this.presenter = presenter;
     }
 
     public void handle(JsonNode update, String botUsername) throws InterruptedException {
-        if (update == null || !update.isObject()) {
-            return;
+        if (update == null || !update.isObject()) return;
+        JsonNode callback = update.path("callback_query");
+        JsonNode message = callback.isObject() ? callback.path("message") : update.path("message");
+        JsonNode sender = callback.isObject() ? callback.path("from") : message.path("from");
+        if (callback.isObject() && callback.path("id").isTextual()) {
+            try { client.answerCallbackQuery(callback.path("id").textValue()); }
+            catch (TelegramBotClient.ApiException exception) {
+                log.warn("Telegram callback acknowledgement failed (code {})", exception.code());
+            }
         }
-        JsonNode message = update.path("message");
-        JsonNode text = message.path("text");
-        JsonNode chatId = message.path("chat").path("id");
-        if (!text.isTextual() || !chatId.isIntegralNumber() || !chatId.canConvertToLong()
-                || chatId.longValue() == 0 || message.path("from").path("is_bot").asBoolean(false)) {
-            return;
+        Long senderId = positiveId(sender.path("id"));
+        Long chatId = positiveId(message.path("chat").path("id"));
+        if (senderId == null || chatId == null || !senderId.equals(chatId)
+                || !"private".equals(message.path("chat").path("type").asText())
+                || sender.path("is_bot").asBoolean(false)) return;
+        try {
+            if (callback.isObject()) {
+                String data = callback.path("data").asText("");
+                if (data.equals("lang:en") || data.equals("lang:am"))
+                    presenter.show(chatId, registration.language(senderId, data.substring(5)));
+                else if (data.matches("exam:[1-9][0-9]{0,17}"))
+                    presenter.show(chatId, registration.exam(senderId, Long.parseLong(data.substring(5))));
+                return;
+            }
+            if (message.path("contact").isObject()) {
+                var contact = message.path("contact");
+                presenter.show(chatId, registration.contact(senderId,
+                    positiveId(contact.path("user_id")), contact.path("phone_number").asText(null)));
+                log.debug("Telegram contact update handled");
+                return;
+            }
+            String text = message.path("text").asText("");
+            String command = text.split("\\s+", 2)[0];
+            if (command.equals("/start") || (botUsername != null && command.startsWith("/start@")
+                    && command.substring(7).equalsIgnoreCase(botUsername))) {
+                presenter.show(chatId, registration.start(senderId));
+                log.debug("Telegram registration step sent");
+            }
+        } catch (DataAccessException | TransactionException exception) {
+            // Database exception details may contain private bind values.
+            log.warn("Registration storage unavailable; user may retry /start");
+            presenter.unavailable(chatId);
         }
-        String command = text.textValue().split("\\s+", 2)[0];
-        boolean start = command.equals("/start")
-                || (botUsername != null && command.startsWith("/start@")
-                && command.substring(7).equalsIgnoreCase(botUsername));
-        if (start) {
-            client.sendMessage(chatId.longValue(), messages.getMessage("telegram.welcome", null, Locale.ENGLISH));
-            log.debug("Telegram welcome reply accepted");
-        } else {
-            log.debug("Telegram unsupported text ignored");
-        }
+    }
+    private Long positiveId(JsonNode node) {
+        return node.isIntegralNumber() && node.canConvertToLong() && node.longValue() > 0
+                ? node.longValue() : null;
     }
 }

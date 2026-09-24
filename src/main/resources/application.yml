@@ -53,3 +53,11 @@ telegram:
   bot:
     enabled: ${TELEGRAM_BOT_ENABLED:false}
     token: ${TELEGRAM_BOT_TOKEN:}
+
+registration:
+  phone-hmac-key: ${PHONE_IDENTITY_HMAC_KEY:}
+
+admin:
+  bootstrap:
+    username: ${ADMIN_BOOTSTRAP_USERNAME:}
+    password: ${ADMIN_BOOTSTRAP_PASSWORD:}

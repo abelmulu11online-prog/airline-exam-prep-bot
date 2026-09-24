@@ -4,7 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 
-// Admin authentication is introduced in Phase 6; do not generate a default user.
+// Persisted admin authentication is supplied explicitly; never generate a default user.
 @SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
 public class AirlineExamPrepApplication {
 

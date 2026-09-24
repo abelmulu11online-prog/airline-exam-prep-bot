@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Sign in')}"></head>
+<body class="login-page">
+<main class="login-card">
+    <div class="brand-mark large" aria-hidden="true">✈</div>
+    <p class="eyebrow">AIRLINE EXAM PREP</p><h1>Welcome back.</h1>
+    <p class="muted">Sign in to manage your preparation platform.</p>
+    <p th:if="${param.error}" class="notice error" role="alert">Unable to sign in. Check your credentials and try again.</p>
+    <p th:if="${param.logout}" class="notice">You have signed out securely.</p>
+    <form th:action="@{/admin/login}" method="post">
+        <label for="username">Username</label><input id="username" name="username" autocomplete="username" required autofocus maxlength="64">
+        <label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required>
+        <button class="primary full" type="submit">Sign in</button>
+    </form>
+    <p class="fine">Authorized administrators only.</p>
+</main></body></html>
