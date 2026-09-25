@@ -3,7 +3,7 @@
 One Java 21 / Spring Boot application for Telegram exam preparation and a
 Thymeleaf admin website. [PROJECT_SPEC.md](PROJECT_SPEC.md) defines the product rules.
 
-## Current scope: compressed Phase 5
+## Current scope: compressed Phase 6
 
 - Private-chat registration: /start → English or Amharic → active exam type →
   share your own Telegram contact → registration and free entitlement.
@@ -15,7 +15,8 @@ Thymeleaf admin website. [PROJECT_SPEC.md](PROJECT_SPEC.md) defines the product 
 - Administrative changes retain actor, timestamp, and before/after values.
 - Question bank, immutable published versions, lifecycle review, source rights,
   pool eligibility, and staged CSV/XLSX imports.
-- Answering, quota consumption, mocks, payments, and deployment are not implemented.
+- Student practice, unique usage counting, progress, resumable mocks, optional timers,
+  frozen questions, scoring, and answer review. Payments and deployment remain future work.
 
 ## Requirements
 
@@ -320,3 +321,102 @@ pages. All automated tests use isolated databases.
 .\mvnw.cmd test
 .\mvnw.cmd package
 ```
+
+## Compressed Phase 6: student exam engine
+
+Registered students use `/start` to open Practice, Mock Exam, Progress, or Help
+in English or Amharic. Practice offers All Categories and paginated eligible
+categories for the registered exam type. Free students receive published free
+practice content; existing lifetime entitlements also permit premium practice.
+Inactive taxonomy and unpublished/archived questions are excluded from new selection.
+
+Showing and skipping questions cost nothing. The first submitted answer to a
+logical question consumes one free slot, regardless of later content versions.
+Each delivery accepts one immutable answer; Review creates another delivery
+without another charge. Feedback includes correctness, the correct choice,
+explanation, and remaining allowance. Previously delivered versions remain
+answerable after revision/archive. Core progress uses the first answer per
+logical question, so retries cannot inflate accuracy. Category accuracy uses
+that first answer's historical version. Accuracy rounds to two decimal places.
+Review and explanations remain available to free students after exhaustion.
+A content shortage is reported separately from an exhausted allowance.
+
+Mock introduction and preparation cost nothing. Preparation freezes the user's
+entitlement question-count snapshot (initially 50) using unique published mock
+questions from the selected exam type. An insufficient pool creates no attempt
+and consumes nothing. One READY/IN_PROGRESS attempt per student is enforced in
+the database; returning to the menu leaves it resumable. Its first submitted
+answer consumes exactly one mock allowance, initially two; practice and mock
+counters are independent. Existing lifetime entitlements bypass both limits.
+There is no payment or automatic lifetime-grant flow.
+
+Admin Settings accepts an optional mock duration of 1–1440 minutes. Blank means
+untimed; no business duration is invented. Each attempt snapshots the duration
+at preparation. Opening its first question starts the server-side deadline.
+Navigation, restarting the application, and subsequent setting changes cannot
+reset it. The next student operation finalizes an expired attempt; no scheduler
+or running-process timer is required. A zero-answer expiry consumes nothing and
+does not expose an answer key. Manual submission requires at least one answer.
+An untimed unanswered attempt remains resumable rather than allowing repeated
+free question-set replacement.
+
+Before submission, students can navigate and change answers without seeing keys
+or explanations. Revision-bearing callbacks prevent delayed old choices from
+overwriting newer answers. Submission is idempotent and freezes total correct,
+incorrect, unanswered, percentage, and category results (one point per correct
+answer; no negative marking). Review reads exact frozen versions, including
+after edits or archival. Progress shows practice/category metrics and the latest
+10 completed mocks. Zero-answer expirations are excluded from completed history.
+
+### Persistence and concurrency
+
+- V7__practice_activity.sql: deliveries, unique user/logical-question usage, and
+  durable current practice position.
+- V8__mock_exam_attempts.sql: attempts, frozen items, answer revisions, unique
+  active-user slot, and persisted totals.
+- V9__mock_duration_setting.sql: nullable validated duration.
+
+V1–V6 are unchanged. Short engine transactions share the existing settings-row
+lock with content/taxonomy edits, preserving atomic answers, allowance changes,
+and content selection. This deliberately serializes initial low-volume traffic;
+revisit lock granularity before scaling. Telegram sends happen after commit.
+Database ownership checks and composite option/version foreign keys protect
+callbacks. Presentation is plain text, split within Telegram message limits.
+No phone number or hash appears in student results. Selection stays in SQL;
+mock creation avoids per-item content reads, and history/category menus are bounded.
+
+### Verification commands
+
+```powershell
+.\mvnw.cmd '-Dtest=PracticeEngineTests,MockEngineTests,EngineConcurrencyTests,StudentTelegramEngineTests' test
+.\mvnw.cmd test
+.\mvnw.cmd package
+# Explicit development PostgreSQL check, with DB_PASSWORD and the existing
+# PHONE_IDENTITY_HMAC_KEY supplied securely through the process environment:
+.\mvnw.cmd '-Dtest=PostgresExamEngineIT' test
+# Use this override when another project owns 8080:
+$env:SERVER_PORT='8081'
+java -jar target/airline-exam-prep-bot-0.0.1.jar
+```
+
+The default suite uses isolated H2 databases and mocked Telegram transport.
+The explicit PostgreSQL test uses a fictional registered account and 101 fictional
+questions, verifies 100-practice and two full 50-question mock limits, and rolls
+back its scenario data. Flyway migrations apply normally and remain installed;
+identity sequence values can advance during rolled-back tests. Existing accounts
+and entitlement snapshots are never changed for testing. Live Telegram verification
+must use actual getMe/polling; only a real human can supply the inbound live click.
+Do not weaken a user's mock size to compensate for insufficient live content.
+
+Phase 6 verification (2026-09-25): `test` and `package` each passed 226 tests
+(0 failures, 0 errors, 0 skipped). The separately invoked PostgreSQL scenario
+passed 1 test with the same zero-failure result. PostgreSQL 18.6 applied V7–V9
+without repair; V1–V6 remained unchanged. Scenario rollback preserved the original
+one user, one entitlement, six archived questions, and zero engine activity rows.
+The packaged application passed Hikari/Flyway/JPA/Tomcat startup, health UP,
+Telegram getMe, successful polling, a real registered-user /start response, and
+graceful shutdown on port 8081 (8080 was unavailable). No 401/409 occurred.
+A live question-answer/mock completion check remains unavailable because the live
+eligible question pools are empty; no entitlement size was reduced. Full student
+flows passed with mocked Telegram transport and fictional integration content.
+No Phase 7 payment workflow or new dependency was added.

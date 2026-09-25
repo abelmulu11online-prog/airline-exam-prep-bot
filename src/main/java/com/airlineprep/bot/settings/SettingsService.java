@@ -29,6 +29,7 @@ public class SettingsService {
         current.setPaymentEnabled(form.paymentEnabled());
         current.setManualPaymentEnabled(form.manualPaymentEnabled());
         current.setSupportInfo(form.supportInfo());
+        current.setMockDurationMinutes(form.mockDurationMinutes());
         changes.record(actor,"SETTINGS_UPDATED","settings:1",before,form.toString());
     }
 }

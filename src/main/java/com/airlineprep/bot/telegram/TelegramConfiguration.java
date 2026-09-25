@@ -39,8 +39,11 @@ public class TelegramConfiguration {
 
         @Bean
         TelegramUpdateHandler telegramUpdateHandler(TelegramBotClient client, MessageSource messages,
-                com.airlineprep.bot.user.RegistrationService registration) {
-            return new TelegramUpdateHandler(client, registration, new RegistrationPresenter(client, messages));
+                com.airlineprep.bot.user.RegistrationService registration,
+                com.airlineprep.bot.practice.PracticeService practice,com.airlineprep.bot.mock.MockAttemptService mocks,
+                com.airlineprep.bot.practice.StudentProgressService progress) {
+            var students=new StudentFlow(practice,mocks,progress,new StudentPresenter(client,messages));
+            return new TelegramUpdateHandler(client, registration, new RegistrationPresenter(client, messages),students);
         }
 
         @Bean

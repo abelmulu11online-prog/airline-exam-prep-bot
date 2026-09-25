@@ -17,7 +17,7 @@ class TelegramUpdateHandlerTests {
     final TelegramBotClient client = mock(TelegramBotClient.class);
     final RegistrationService registration = mock(RegistrationService.class);
     final RegistrationPresenter presenter = new RegistrationPresenter(client, messages());
-    final TelegramUpdateHandler handler = new TelegramUpdateHandler(client, registration, presenter);
+    final TelegramUpdateHandler handler = new TelegramUpdateHandler(client, registration, presenter,mock(StudentFlow.class));
     static ResourceBundleMessageSource messages() {
         var source = new ResourceBundleMessageSource();
         source.setBasename("messages"); source.setDefaultEncoding("UTF-8"); return source;

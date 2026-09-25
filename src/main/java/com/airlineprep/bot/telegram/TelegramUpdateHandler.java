@@ -12,9 +12,11 @@ public class TelegramUpdateHandler {
     private final TelegramBotClient client;
     private final RegistrationService registration;
     private final RegistrationPresenter presenter;
+    private final StudentFlow students;
 
     public TelegramUpdateHandler(TelegramBotClient client, RegistrationService registration,
-                                 RegistrationPresenter presenter) {
+                                 RegistrationPresenter presenter,StudentFlow students) {
+        this.students=students;
         this.client = client; this.registration = registration; this.presenter = presenter;
     }
 
@@ -38,15 +40,19 @@ public class TelegramUpdateHandler {
             if (callback.isObject()) {
                 String data = callback.path("data").asText("");
                 if (data.equals("lang:en") || data.equals("lang:am"))
-                    presenter.show(chatId, registration.language(senderId, data.substring(5)));
+                    show(chatId, registration.language(senderId, data.substring(5)));
                 else if (data.matches("exam:[1-9][0-9]{0,17}"))
-                    presenter.show(chatId, registration.exam(senderId, Long.parseLong(data.substring(5))));
+                    show(chatId, registration.exam(senderId, Long.parseLong(data.substring(5))));
+                else if(data.startsWith("s:")||data.startsWith("p:")||data.startsWith("m:"))
+                    students.callback(senderId,data);
                 return;
             }
             if (message.path("contact").isObject()) {
                 var contact = message.path("contact");
-                presenter.show(chatId, registration.contact(senderId,
-                    positiveId(contact.path("user_id")), contact.path("phone_number").asText(null)));
+                var result=registration.contact(senderId,
+                    positiveId(contact.path("user_id")), contact.path("phone_number").asText(null));
+                if(result.status()==com.airlineprep.bot.user.RegistrationStatus.COMPLETED) presenter.show(chatId,result);
+                show(chatId,result);
                 log.debug("Telegram contact update handled");
                 return;
             }
@@ -54,7 +60,7 @@ public class TelegramUpdateHandler {
             String command = text.split("\\s+", 2)[0];
             if (command.equals("/start") || (botUsername != null && command.startsWith("/start@")
                     && command.substring(7).equalsIgnoreCase(botUsername))) {
-                presenter.show(chatId, registration.start(senderId));
+                show(chatId, registration.start(senderId));
                 log.debug("Telegram registration step sent");
             }
         } catch (DataAccessException | TransactionException exception) {
@@ -62,6 +68,10 @@ public class TelegramUpdateHandler {
             log.warn("Registration storage unavailable; user may retry /start");
             presenter.unavailable(chatId);
         }
+    }
+    private void show(long chatId,com.airlineprep.bot.user.RegistrationView view) throws InterruptedException {
+        if(view.status()==com.airlineprep.bot.user.RegistrationStatus.COMPLETED) students.menu(chatId);
+        else presenter.show(chatId,view);
     }
     private Long positiveId(JsonNode node) {
         return node.isIntegralNumber() && node.canConvertToLong() && node.longValue() > 0

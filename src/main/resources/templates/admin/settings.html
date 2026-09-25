@@ -9,6 +9,7 @@
 <form class="panel" th:action="@{/admin/settings}" th:object="${form}" method="post">
     <div class="notice error" th:if="${#fields.hasErrors('*')}" role="alert"><p th:each="error : ${#fields.errors('*')}" th:text="${error}"></p></div>
     <h2>Free access</h2><div class="form-grid">
+    <div><label for="duration">Mock duration in minutes (blank = untimed)</label><input id="duration" type="number" min="1" max="1440" th:field="*{mockDurationMinutes}"><p>Applies to newly prepared mocks. Existing attempt deadlines remain unchanged.</p></div>
     <div><label for="practice">Unique practice questions</label><input id="practice" type="number" min="0" th:field="*{freePracticeLimit}" required></div>
     <div><label for="mocks">Mock exams</label><input id="mocks" type="number" min="0" th:field="*{freeMockLimit}" required></div>
     <div><label for="questions">Questions per mock</label><input id="questions" type="number" min="1" th:field="*{questionsPerMock}" required></div>

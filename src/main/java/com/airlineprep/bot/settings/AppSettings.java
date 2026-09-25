@@ -6,6 +6,9 @@ import com.airlineprep.bot.common.TimedEntity;
 @Entity
 @Table(name = "app_settings")
 public class AppSettings extends TimedEntity {
+    private Integer mockDurationMinutes;
+    public Integer getMockDurationMinutes() { return mockDurationMinutes; }
+    public void setMockDurationMinutes(Integer value) { mockDurationMinutes=value; }
     @Id
     private Long id;
 

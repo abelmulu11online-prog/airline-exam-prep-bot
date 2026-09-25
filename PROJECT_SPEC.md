@@ -4,7 +4,7 @@
 
 This document is the source of truth for subsequent development of the airline written-exam preparation platform. Read it completely before changing the project. Explicitly agreed requirement changes must be reflected here rather than silently changing product behavior.
 
-The current milestone is **Compressed Phase 5: Question Bank & Content Management**, implemented and verified on the compressed Phase 4 baseline. It adds versioned questions, content lifecycle, source rights, pool eligibility, secured admin content management, and staged CSV/XLSX imports. Phase 4 registration, identity, entitlement, settings, and taxonomy behavior remains intact. Phase 1 originally delivered this specification only; the requirements below still describe the full product, not a claim that later exam/payment features exist.
+The current milestone is **Compressed Phase 6: Complete Exam Engine**, built on the verified compressed Phase 5 baseline. It adds student practice, unique first-answer usage, progress, frozen resumable mocks, optional server-side timers, scoring, and review. Earlier registration, admin, content, and import behavior remains intact. Payments and production deployment remain future work.
 
 Requirements below are planned Version 1 capabilities unless labeled optional, future, or a decision to resolve. Implement only the structures needed by the active phase.
 
@@ -320,7 +320,7 @@ The following are not required for Version 1: React admin frontend, Flutter or R
 
 ## 15. Development roadmap
 
-The explicitly authorized compressed roadmap supersedes the scheduling of the original small phases below: **Compressed Phase 4** combines original Phases 4–8 (registration, entitlement foundation, admin, settings, exam types/categories). **Compressed Phase 5** is Question Bank & Content Management. Later compressed phases are not implemented or newly specified here. The original roadmap is retained as architectural history; its phase numbering does not prohibit the authorized combined scope.
+The explicitly authorized compressed roadmap supersedes the scheduling of the original small phases below: **Compressed Phase 4** combines original Phases 4–8 (registration, entitlement foundation, admin, settings, exam types/categories). **Compressed Phase 5** is Question Bank & Content Management. **Compressed Phase 6** implements the complete exam engine. Compressed Phase 7 payments remain unimplemented. The original roadmap is retained as architectural history; its phase numbering does not prohibit the authorized combined scope.
 
 ### Compressed Phase 4 decisions
 
@@ -342,7 +342,7 @@ The explicitly authorized compressed roadmap supersedes the scheduling of the or
 - Duplicate fingerprints use Unicode normalization, case folding, and whitespace folding within an exam type, including retained historical versions. Same text/options/key is exact; same text with changed options/key is likely. Both are skipped for human review; punctuation is preserved to avoid collapsing distinct mathematical expressions. No silent merge or automatic override exists.
 - Upload limits are 2 MiB/file, 3 MiB/request, 500 data rows, one XLSX sheet, 20 MiB expanded workbook, and 1,000 ZIP parts. Formula/error cells, macros, external links, and embedded objects are rejected. README documents the exact headers and cell limits. Upload bytes are not retained as filesystem files.
 - V4–V6 are additive migrations following V1–V3. V6 guarantees deterministic stale-edit protection independently of clock resolution. Content pages retain existing admin authentication, CSRF, escaped rendering, and audit context. The live fictional verification content is archived and its temporary taxonomy deactivated.
-- Compressed Phase 5 content management is complete. Compressed Phase 6 exam-engine work, payments, and production deployment remain unimplemented.
+- Compressed Phase 5 content management is complete. Compressed Phase 6 adds the exam engine; payments and production deployment remain unimplemented.
 
 ### Original incremental roadmap (historical)
 
@@ -414,8 +414,8 @@ Phase 2 must not implement Telegram, registration, questions, practice, mocks, p
 These decisions do not block the Phase 2 technical foundation and must not be filled with invented product features:
 
 - Registration: controlled HMAC key rotation and recovery policy for a previously claimed phone identity. Normalization, HMAC adoption, and stable-key requirements are defined in the compressed Phase 4 decisions above.
-- Practice/progress: repeat-answer metric definitions, review after exhaustion, and free-user explanation/history scope. Phase 5 defines logical question ID as the quota identity across routine content revisions.
-- Mock engine: blueprint interaction with registration-time mock size, minimum pool requirements, concurrent/abandoned attempts, selection policy, and optional timing/scoring details.
+- Practice/progress decisions are resolved by the compressed Phase 6 decisions below.
+- Mock engine decisions are resolved by the compressed Phase 6 decisions below; category blueprints remain future scope.
 - Payments: request/submission state transitions, reference uniqueness/normalization by method, resubmissions, pending-request reuse/expiry, and pending handling when payments are disabled.
 - Admin/operations: credential provisioning, detailed authorization, audit/data retention, production transport/hosting, backup schedule, and recovery objectives.
 
@@ -436,3 +436,36 @@ Future implementations must preserve these acceptance examples:
 - Admin, settings, Telegram, and services run in one modular Spring Boot application with a replaceable payment boundary.
 
 Phase 1 delivers this document only. No implementation or operational verification is implied by these planned acceptance rules.
+
+## 19. Compressed Phase 6 decisions
+
+- Default 100 unique answered practice questions, 2 mocks, and 50 questions per
+  mock are enforced from registration-time entitlement snapshots. No offer expiry.
+- Practice delivery/skip costs zero. Unique logical-question first answers charge
+  once across content versions. Repeat deliveries preserve first-answer accuracy.
+  Free students retain explanation/review access after exhaustion.
+- New practice selection uses eligible published free content, plus premium for
+  existing lifetime access. Historical deliveries retain their exact versions.
+- Mock preparation freezes a random unique set from the selected exam's active
+  published mock pool, using the entitlement's size. A shortage fails without
+  consumption. No category blueprint or smaller fallback is invented.
+- One active READY/IN_PROGRESS attempt is allowed per user. Leaving the menu
+  preserves it; it resumes at the first unanswered item, or saved position when
+  all are answered. There is no cancellation/replacement loop for free previews.
+- Only the first answer consumes a mock. Answers may change before finalization;
+  stale answer revisions cannot undo newer choices. Submission is idempotent.
+- Duration is optional (blank/NULL = untimed, otherwise 1–1440 minutes), snapshotted
+  at preparation. First question opening starts an absolute server deadline.
+  Lazy expiry on interaction survives restarts. Zero-answer expiry costs nothing
+  and withholds answer-key review; manual submission requires an answer.
+- Scoring gives one point per correct answer, no negative marking, and percentage
+  over the complete frozen set. Unanswered items and historical category results
+  are explicit. Review references frozen versions; totals persist after completion.
+- Progress uses first practice answers and latest 10 completed mocks; zero-answer
+  expiry is excluded from completed history. Percentages round to two decimals.
+- Existing lifetime flags permit unlimited appropriate practice/mocks without
+  adding payment, receipt, approval, notification, or access-grant endpoints.
+- V7–V9 are additive. Transactional settings-row serialization and database
+  uniqueness protect concurrent usage/attempt creation; network sends follow commit.
+- Live human actions cannot be fabricated. Successful transport plus automated
+  engine/Telegram E2E verification may be reported PASS-WITH-LIVE-USER-CHECK.
