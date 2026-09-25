@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Import questions')}"></head>
+<body><header th:replace="~{admin/fragments :: header}"></header><div class="shell"><nav th:replace="~{admin/fragments :: nav}"></nav><main>
+<h1>Import questions</h1><p class="notice error" role="alert" th:if="${error}" th:text="${error}"></p>
+
+<p>Upload UTF-8 CSV or XLSX (2 MiB, 500 rows). XLSX must contain exactly one sheet, with no formulas or macros. Use exam and category codes. New questions are drafts after confirmation.</p>
+<p><a th:href="@{/admin/questions/import/template.csv}">Download CSV template</a> (may also be opened and saved as XLSX)</p>
+<p>Correct answer: A–H. Difficulty: EASY, MEDIUM, HARD. Availability: true or false. Rights: ORIGINAL, LICENSED, PERMITTED, PUBLIC_DOMAIN, UNKNOWN_REVIEW_REQUIRED, BLOCKED.</p>
+<form class="panel" method="post" enctype="multipart/form-data" th:action="@{/admin/questions/import}">
+<label>Question file<input type="file" name="file" accept=".csv,.xlsx" required></label><button>Upload and preview</button></form>
+<h2>Import history</h2><section class="panel" th:each="b : ${batches}"><a th:href="@{/admin/questions/import/{id}(id=${b.id})}" th:text="${b.filename}"></a>
+<p th:text="${b.status+' · '+b.actor+' · '+b.createdAt}"></p><p th:text="${'Total '+b.totalRows+' / Valid '+b.validRows+' / Invalid '+b.invalidRows+' / Duplicates '+b.duplicateRows+' / Created '+b.importedRows+' / Failed '+b.failedRows}"></p></section>
+<a th:if="${batches.hasPrevious()}" th:href="@{/admin/questions/import(page=${batches.number-1})}">Previous</a>
+<a th:if="${batches.hasNext()}" th:href="@{/admin/questions/import(page=${batches.number+1})}">Next</a>
+</main></div></body></html>

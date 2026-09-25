@@ -3,7 +3,7 @@
 One Java 21 / Spring Boot application for Telegram exam preparation and a
 Thymeleaf admin website. [PROJECT_SPEC.md](PROJECT_SPEC.md) defines the product rules.
 
-## Current scope: compressed Phase 4
+## Current scope: compressed Phase 5
 
 - Private-chat registration: /start → English or Amharic → active exam type →
   share your own Telegram contact → registration and free entitlement.
@@ -13,8 +13,9 @@ Thymeleaf admin website. [PROJECT_SPEC.md](PROJECT_SPEC.md) defines the product 
   and 50 questions per mock, without expiration. These are independent allowances.
 - Admin login, dashboard, settings, exam types, and categories.
 - Administrative changes retain actor, timestamp, and before/after values.
-- Questions, answering, quota consumption, mocks, payments, imports, and deployment
-  are not implemented. Compressed Phase 5 is Question Bank & Content Management.
+- Question bank, immutable published versions, lifecycle review, source rights,
+  pool eligibility, and staged CSV/XLSX imports.
+- Answering, quota consumption, mocks, payments, and deployment are not implemented.
 
 ## Requirements
 
@@ -195,4 +196,127 @@ Stop the application cleanly using Ctrl+C. Clear process credentials afterward:
 ```powershell
 Remove-Item Env:DB_PASSWORD, Env:TELEGRAM_BOT_TOKEN, Env:PHONE_IDENTITY_HMAC_KEY,
     Env:ADMIN_BOOTSTRAP_PASSWORD, Env:ADMIN_BOOTSTRAP_USERNAME -ErrorAction SilentlyContinue
+```
+
+## Question bank and content management
+
+Open **/admin/questions** to create drafts, search, filter, and inspect version
+history. Lists use database pagination (20 questions/imports/rows per page,
+10 historical versions per page). Filters cover text, exam, category, status,
+pool, and rights. Sort by creation or update time. Archived questions are
+excluded unless explicitly selected.
+
+The lifecycle is DRAFT → REVIEWED → PUBLISHED → ARCHIVED. Reviewed content can
+return to draft. Saving reviewed content also clears review. Incomplete drafts
+are allowed; review and publication require an active matching exam/category,
+question, explanation, EASY/MEDIUM/HARD difficulty, 2–8 distinct nonblank options,
+exactly one correct answer, source type/title, resolved rights, and at least one
+pool. Blank option slots are omitted and remaining options preserve order.
+
+Published edits create a new numbered draft version. The previous text,
+answer key, explanation, source metadata, eligibility, exam/category names and
+IDs, and publication/review timestamps remain preserved. A draft revision removes
+the logical question from new selection until published again. Archiving applies
+to the logical question and preserves all versions; no delete or restore endpoint
+exists. Concurrent stale edits are rejected. Future attempts must reference
+question_versions.id; the logical questions.id is the stable unique-practice
+quota identity across routine revisions. No serving or quota engine exists yet.
+
+Free practice, premium practice, and mock flags may be combined without duplicating
+questions. Flags do not imply publication or user authorization. Future delivery
+must require PUBLISHED and recheck active taxonomy, the requested pool, and the
+user's entitlement. QuestionService.search is an admin query, not a student access
+boundary.
+
+Source metadata includes type, title, reference, optional year, notes, and use
+status: ORIGINAL, LICENSED, PERMITTED, PUBLIC_DOMAIN, UNKNOWN_REVIEW_REQUIRED, or
+BLOCKED. Unknown/blocked rights are visible and prevent review/publication.
+Only import content you have permission to use commercially. Public visibility
+does not establish permission. No exam papers are scraped or seeded.
+
+### CSV and XLSX imports
+
+Use **/admin/questions/import** and download the CSV template. The same headers
+work in a single-sheet XLSX saved from a spreadsheet editor. Apache Commons CSV
+1.14.1 handles quoted CSV; Apache POI 5.5.1 handles XLSX. Both are Apache-licensed.
+
+Every header below is required exactly once (order may vary); optional cells may
+be blank. Unknown, duplicate, or missing headers are rejected.
+
+```text
+exam_type,category,question,option_a,option_b,option_c,option_d,option_e,option_f,option_g,option_h,correct_answer,explanation,difficulty,source_type,source,source_reference,source_year,source_notes,copyright_status,free_available,premium_available,mock_available
+```
+
+- exam_type and category: existing catalog **codes**, with category scoped to exam.
+- question and explanation: nonblank, up to 12,000 characters each.
+- option_a through option_h: 2–8 nonblank choices, up to 2,000 characters each.
+  correct_answer is exactly one A–H letter identifying a populated slot.
+- difficulty: EASY, MEDIUM, HARD.
+- source_type and source: nonblank type/title (100/300 characters).
+- source_reference, source_year, source_notes: optional (500 characters,
+  four-digit year 1000–9999, 2,000 characters).
+- copyright_status: one of the use statuses above.
+- free_available, premium_available, mock_available: true or false, with at least
+  one true. Blank booleans are invalid.
+
+Limits: 2 MiB per file, 3 MiB multipart request, 500 data rows, 12,000 characters
+per cell; XLSX ZIP expansion is limited to 20 MiB and 1,000 parts. Only UTF-8 CSV
+(with optional BOM) and XLSX are accepted. CSV supports quoted commas, multiline
+fields, and Unicode. Blank rows are ignored. XLSX must have exactly one sheet;
+formula/error cells are invalid, and macros, external links, embedded objects,
+legacy XLS, and corrupt workbooks are rejected. Formulas are never evaluated.
+Filenames cannot contain path separators or control characters. Raw uploads
+are not retained as files.
+
+Upload parses and persists a row-level preview without creating questions.
+Preview reports source status, row number, reference codes, errors, and duplicate
+reasons. The original submitted cells are retained as staging JSON for review and
+revalidation; question content itself uses normalized relational tables.
+
+Duplicate detection is scoped to exam type and checks all retained versions,
+including archived history. NFKC normalization, Unicode whitespace folding, and
+case folding identify exact question/options/answer-key matches. Same normalized
+question text with differing options or key is a likely duplicate. Punctuation
+is preserved to avoid merging mathematically distinct questions. Both classes
+are skipped by confirmation and remain available for human review in batch
+history; no automatic merge or override exists. Inspect existing content before
+manually creating a distinct question.
+
+Confirmation is an authenticated CSRF-protected POST. It revalidates references
+and duplicates and creates only valid unique drafts. Unknown/blocked rights may
+be imported as drafts for source review. Row errors do not prevent other valid
+rows from being imported. Cancel creates no questions. Batch reports retain
+uploaded actor/time/name, valid/invalid/duplicate/created/failed counts, and links
+to created questions.
+
+Confirmation is one atomic transaction. An unexpected persistence failure rolls
+back all its questions, options, links, and counts, leaving the staged batch
+retryable; it never claims partial success. Invalid/duplicate rows are expected
+outcomes, not failed writes. A successful confirmation has zero failed writes.
+The existing settings-row lock serializes confirmation with manual question
+creation, registration, and taxonomy edits; parsing happens outside that lock.
+The 500-row limit bounds lock duration. Persistent batch state makes refreshes
+and simultaneous confirmations idempotent. Audit events retain acting admin and
+question/version/batch identifiers without copying full content into audit logs.
+
+### Phase 5 schema and checks
+
+4. V4__question_bank.sql — logical questions, content versions, ordered options,
+   historical taxonomy/source context, fingerprints, and lifecycle indexes.
+5. V5__question_imports.sql — persistent preview rows, batch counts, question links.
+6. V6__question_edit_revision.sql — deterministic optimistic revision advancement
+   for draft edits, including saves within the same clock tick/transaction.
+
+Indexes support lifecycle/current-version lookups, taxonomy, source rights,
+fingerprints, and import history. Low-selectivity boolean flags are filtered
+alongside indexed taxonomy/current-version joins rather than individually indexed.
+Search uses bound criteria parameters and database pagination. Content escapes
+through Thymeleaf; admin forms bind DTOs, not entities. CSRF and existing admin
+role requirements remain in force. No registration phone data appears in content
+pages. All automated tests use isolated databases.
+
+```powershell
+.\mvnw.cmd '-Dtest=QuestionBankTests,QuestionTransactionTests' test
+.\mvnw.cmd test
+.\mvnw.cmd package
 ```

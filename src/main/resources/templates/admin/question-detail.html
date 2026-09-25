@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Question detail')}"></head>
+<body><header th:replace="~{admin/fragments :: header}"></header><div class="shell"><nav th:replace="~{admin/fragments :: nav}"></nav><main>
+<h1>Question detail</h1><p class="notice error" role="alert" th:if="${error}" th:text="${error}"></p>
+
+<p><a th:href="@{/admin/questions}">Back to questions</a></p>
+<p th:text="${'#'+question.id+' · '+question.status+' · Current version '+question.currentVersion.versionNumber}"></p>
+<a th:if="${question.status.name() != 'ARCHIVED'}" th:href="@{/admin/questions/{id}/edit(id=${question.id})}" th:text="${question.status.name() == 'PUBLISHED' ? 'Create draft revision' : 'Edit draft (returns reviewed content to draft)'}"></a>
+<form th:if="${question.status.name() != 'ARCHIVED'}" method="post" th:action="@{/admin/questions/{id}/transition(id=${question.id})}">
+<input type="hidden" name="expectedRevision" th:value="${question.revision}">
+<button th:if="${question.status.name() == 'DRAFT'}" name="target" value="REVIEWED">Mark reviewed</button>
+<button th:if="${question.status.name() == 'REVIEWED'}" name="target" value="PUBLISHED">Publish</button>
+<button th:if="${question.status.name() == 'REVIEWED'}" name="target" value="DRAFT">Return to draft</button>
+<button name="target" value="ARCHIVED">Archive question</button></form>
+<h2>Version history</h2>
+<section class="panel" th:each="v : ${history}">
+<h3 th:text="${'Version '+v.versionNumber}"></h3>
+<p th:text="${v.content.questionText}" class="question-text"></p>
+<ol><li th:each="o : ${v.options}"><span th:text="${o.text}"></span><strong th:if="${o.correct}"> — Correct</strong></li></ol>
+<p th:text="${v.content.explanation}" class="question-text"></p>
+<p th:text="${'Exam: '+v.examName+' / Category: '+v.categoryName+' / Difficulty: '+v.content.difficulty}"></p>
+<p th:text="${'Source: '+v.content.sourceType+' · '+v.content.sourceTitle+' · '+v.content.sourceReference}"></p>
+<p th:if="${v.content.sourceYear}" th:text="${'Source year: '+v.content.sourceYear}"></p><p th:text="${v.content.sourceNotes}"></p>
+<p th:text="${'Use status: '+v.content.useStatus}"></p>
+<p th:text="${'Free: '+v.content.freePool+' / Premium: '+v.content.premiumPool+' / Mock: '+v.content.mockPool}"></p>
+<p th:text="${'Created by '+v.createdBy+' at '+v.createdAt}"></p>
+<p th:if="${v.reviewedAt}" th:text="${'Reviewed by '+v.reviewedBy+' at '+v.reviewedAt}"></p>
+<p th:if="${v.publishedAt}" th:text="${'Published at '+v.publishedAt}"></p>
+</section>
+<a th:if="${history.hasPrevious()}" th:href="@{/admin/questions/{id}(id=${question.id},page=${history.number-1})}">Previous versions</a>
+<a th:if="${history.hasNext()}" th:href="@{/admin/questions/{id}(id=${question.id},page=${history.number+1})}">Older versions</a>
+</main></div></body></html>

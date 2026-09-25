@@ -14,14 +14,21 @@ public class AdminDashboardController {
     private final ExamTypeRepository exams;
     private final CategoryRepository categories;
     private final SettingsService settings;
+    private final com.airlineprep.bot.question.QuestionRepository questions;
     public AdminDashboardController(BotUserRepository users, ExamTypeRepository exams,
-                                    CategoryRepository categories, SettingsService settings) {
+                                    CategoryRepository categories, SettingsService settings,
+                                    com.airlineprep.bot.question.QuestionRepository questions) {
+        this.questions=questions;
         this.users=users; this.exams=exams; this.categories=categories; this.settings=settings;
     }
     @GetMapping("/admin/login")
     public String login() { return "admin/login"; }
     @GetMapping("/admin")
     public String dashboard(Model model) {
+        model.addAttribute("questionTotal",questions.count());
+        java.util.Map<String,Long> counts=new java.util.LinkedHashMap<>();
+        for(var status:com.airlineprep.bot.question.QuestionStatus.values()) counts.put(status.name(),questions.countByStatus(status));
+        model.addAttribute("questionCounts",counts);
         model.addAttribute("users",users.count());
         model.addAttribute("completed",users.countByRegistrationStatus(RegistrationStatus.COMPLETED));
         model.addAttribute("exams",exams.countByActiveTrue());

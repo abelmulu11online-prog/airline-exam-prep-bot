@@ -4,7 +4,7 @@
 
 This document is the source of truth for subsequent development of the airline written-exam preparation platform. Read it completely before changing the project. Explicitly agreed requirement changes must be reflected here rather than silently changing product behavior.
 
-The current milestone is **Compressed Phase 4: User & Admin Foundation**, authorized after the verified Phase 1–3 baseline. It combines registration, verified phone identity, entitlement snapshots, admin security/dashboard, settings, and exam taxonomy. Phase 1 originally delivered this specification only; the requirements below still describe the full product, not a claim that later features exist.
+The current milestone is **Compressed Phase 5: Question Bank & Content Management**, implemented and verified on the compressed Phase 4 baseline. It adds versioned questions, content lifecycle, source rights, pool eligibility, secured admin content management, and staged CSV/XLSX imports. Phase 4 registration, identity, entitlement, settings, and taxonomy behavior remains intact. Phase 1 originally delivered this specification only; the requirements below still describe the full product, not a claim that later exam/payment features exist.
 
 Requirements below are planned Version 1 capabilities unless labeled optional, future, or a decision to resolve. Implement only the structures needed by the active phase.
 
@@ -332,6 +332,18 @@ The explicitly authorized compressed roadmap supersedes the scheduling of the or
 - Initial admin provisioning uses optional environment credentials, stores BCrypt only, and never resets existing passwords on restart. Admin forms use sessions, CSRF, validation, and Post/Redirect/Get. Settings and taxonomy mutations preserve actor/time/before/after audit context.
 - Exam types/categories support create/edit/activation/deactivation, with no destructive delete routes. Registration uses only active exam types and rechecks deactivation before completion. No preconfigured exam types are required to start safely.
 
+### Compressed Phase 5 decisions
+
+- Stable logical question IDs survive revisions and will be the unique-practice quota identity. Future historical attempts must reference the exact question-version ID; no attempt or quota-consumption workflow is implemented here.
+- Single-correct MCQs support 2–8 ordered nonblank options. Drafts can be incomplete. Review/publication require matching active taxonomy, text, explanation, difficulty, distinct options with exactly one correct key, provenance, resolved rights, and at least one pool.
+- Draft edits retain their version number; reviewed edits clear review. Published edits create a new draft version and suspend the logical question from new selection until republished. Published content, option keys, source details, and taxonomy names/IDs remain preserved. Archiving is non-destructive, with no restore or physical-delete route.
+- Source-use statuses are ORIGINAL, LICENSED, PERMITTED, PUBLIC_DOMAIN, UNKNOWN_REVIEW_REQUIRED, and BLOCKED. Unknown/blocked content may be staged/imported as draft but cannot be reviewed or published.
+- CSV/XLSX uploads persist preview rows and batch history before any question creation. Confirmation imports valid unique rows as drafts, rechecking taxonomy and duplicates. Invalid and duplicate rows remain reviewable. Batch confirmation is atomic and idempotent; unexpected write failures roll back all newly created content and leave the batch retryable.
+- Duplicate fingerprints use Unicode normalization, case folding, and whitespace folding within an exam type, including retained historical versions. Same text/options/key is exact; same text with changed options/key is likely. Both are skipped for human review; punctuation is preserved to avoid collapsing distinct mathematical expressions. No silent merge or automatic override exists.
+- Upload limits are 2 MiB/file, 3 MiB/request, 500 data rows, one XLSX sheet, 20 MiB expanded workbook, and 1,000 ZIP parts. Formula/error cells, macros, external links, and embedded objects are rejected. README documents the exact headers and cell limits. Upload bytes are not retained as filesystem files.
+- V4–V6 are additive migrations following V1–V3. V6 guarantees deterministic stale-edit protection independently of clock resolution. Content pages retain existing admin authentication, CSRF, escaped rendering, and audit context. The live fictional verification content is archived and its temporary taxonomy deactivated.
+- Compressed Phase 5 content management is complete. Compressed Phase 6 exam-engine work, payments, and production deployment remain unimplemented.
+
 ### Original incremental roadmap (historical)
 
 | Phase | Scope |
@@ -402,7 +414,7 @@ Phase 2 must not implement Telegram, registration, questions, practice, mocks, p
 These decisions do not block the Phase 2 technical foundation and must not be filled with invented product features:
 
 - Registration: controlled HMAC key rotation and recovery policy for a previously claimed phone identity. Normalization, HMAC adoption, and stable-key requirements are defined in the compressed Phase 4 decisions above.
-- Questions/practice/progress: precise logical-question quota identity across versions, repeat-answer metric definitions, review after exhaustion, and free-user explanation/history scope.
+- Practice/progress: repeat-answer metric definitions, review after exhaustion, and free-user explanation/history scope. Phase 5 defines logical question ID as the quota identity across routine content revisions.
 - Mock engine: blueprint interaction with registration-time mock size, minimum pool requirements, concurrent/abandoned attempts, selection policy, and optional timing/scoring details.
 - Payments: request/submission state transitions, reference uniqueness/normalization by method, resubmissions, pending-request reuse/expiry, and pending handling when payments are disabled.
 - Admin/operations: credential provisioning, detailed authorization, audit/data retention, production transport/hosting, backup schedule, and recovery objectives.

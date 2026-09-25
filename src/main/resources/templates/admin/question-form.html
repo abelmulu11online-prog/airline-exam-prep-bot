@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Edit question')}"></head>
+<body><header th:replace="~{admin/fragments :: header}"></header><div class="shell"><nav th:replace="~{admin/fragments :: nav}"></nav><main>
+<h1>Edit question</h1><p class="notice error" role="alert" th:if="${error}" th:text="${error}"></p>
+
+<p>Save incomplete content as a draft. Editing published content creates a draft revision and removes the question from new selection until reviewed and published again.</p>
+<form class="panel" th:action="@{${action}}" th:object="${form}" method="post">
+<div class="notice error" th:if="${#fields.hasErrors('*')}" role="alert"><p th:each="error : ${#fields.errors('*')}" th:text="${error}"></p></div>
+<input type="hidden" th:field="*{expectedRevision}">
+<label>Exam type<select th:field="*{examTypeId}"><option value="">Choose</option><option th:each="e : ${exams}" th:value="${e.id}" th:text="${e.name}"></option></select></label>
+<label>Category<select th:field="*{categoryId}"><option value="">Choose</option><option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name + ' (exam ID ' + c.examTypeId + ')'}"></option></select></label>
+<label>Question<textarea th:field="*{questionText}" maxlength="12000" rows="5"></textarea></label>
+<label>Explanation<textarea th:field="*{explanation}" maxlength="12000" rows="4"></textarea></label>
+<fieldset><legend>Answer options (2–8 for publication; leave unused options blank)</legend>
+<div th:each="i : ${#numbers.sequence(0,7)}"><label th:for="${'option-'+i}" th:text="${'Option '+(i+1)}"></label><input th:id="${'option-'+i}" th:field="*{options[__${i}__]}" maxlength="2000">
+<label class="check"><input type="radio" th:field="*{correctOption}" th:value="${i}"> Correct answer</label></div></fieldset>
+<label>Difficulty<select th:field="*{difficulty}"><option th:each="d : ${difficulties}" th:value="${d}" th:text="${d}"></option></select></label>
+<fieldset><legend>Source and rights</legend>
+<label>Source type<input th:field="*{sourceType}" maxlength="100" placeholder="Original practice / textbook / licensed collection"></label>
+<label>Source title<input th:field="*{sourceTitle}" maxlength="300"></label>
+<label>Source reference<input th:field="*{sourceReference}" maxlength="500"></label>
+<label>Source year<input type="number" min="1000" max="9999" th:field="*{sourceYear}"></label>
+<label>Source notes<textarea th:field="*{sourceNotes}" maxlength="2000"></textarea></label>
+<label>Content-use status<select th:field="*{useStatus}"><option th:each="r : ${rights}" th:value="${r}" th:text="${r}"></option></select></label>
+<p>Unknown or blocked rights prevent review and publication. Public visibility does not establish permission.</p></fieldset>
+<label class="check"><input type="checkbox" th:field="*{freePool}"> Free practice</label>
+<label class="check"><input type="checkbox" th:field="*{premiumPool}"> Premium practice</label>
+<label class="check"><input type="checkbox" th:field="*{mockPool}"> Mock</label>
+<button type="submit">Save draft</button><a th:href="@{/admin/questions}">Back to questions</a></form></main></div></body></html>

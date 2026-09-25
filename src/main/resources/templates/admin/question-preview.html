@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Import preview')}"></head>
+<body><header th:replace="~{admin/fragments :: header}"></header><div class="shell"><nav th:replace="~{admin/fragments :: nav}"></nav><main>
+<h1>Import preview</h1><p class="notice error" role="alert" th:if="${error}" th:text="${error}"></p>
+
+<p><a th:href="@{/admin/questions/import}">Import history</a></p>
+<p th:text="${batch.filename+' · '+batch.status}"></p>
+<p th:text="${'Total '+batch.totalRows+' / Valid '+batch.validRows+' / Invalid '+batch.invalidRows+' / Duplicates '+batch.duplicateRows+' / Created '+batch.importedRows+' / Failed '+batch.failedRows}"></p>
+<p>Confirmation imports only valid unique rows. Duplicate candidates stay in this report for review; inspect existing content before creating any distinct question manually. Unknown or blocked rights can be saved as drafts but cannot be published.</p>
+<form th:if="${batch.status.name() == 'VALIDATED' || batch.status.name() == 'REVIEW_REQUIRED'}" method="post" th:action="@{/admin/questions/import/{id}/confirm(id=${batch.id})}"><button>Confirm valid unique rows as drafts</button></form>
+<form th:if="${batch.status.name() == 'VALIDATED' || batch.status.name() == 'REVIEW_REQUIRED'}" method="post" th:action="@{/admin/questions/import/{id}/cancel(id=${batch.id})}"><button>Cancel batch</button></form>
+<section class="panel" th:each="r : ${rows}"><h2 th:text="${'Row '+r.rowNumber}"></h2>
+<p th:text="${r.questionPreview}"></p><p th:text="${r.examCode+' / '+r.categoryCode+' · '+r.useStatus}"></p>
+<p th:text="${r.errors.isEmpty() ? 'Valid content' : r.errors}"></p>
+<p th:text="${r.duplicateStatus+' '+r.duplicateReason}"></p>
+<a th:if="${r.questionId}" th:href="@{/admin/questions/{id}(id=${r.questionId})}" th:text="${'Created question '+r.questionId}"></a></section>
+<a th:if="${rows.hasPrevious()}" th:href="@{/admin/questions/import/{id}(id=${batch.id},page=${rows.number-1})}">Previous</a>
+<a th:if="${rows.hasNext()}" th:href="@{/admin/questions/import/{id}(id=${batch.id},page=${rows.number+1})}">Next</a>
+</main></div></body></html>
