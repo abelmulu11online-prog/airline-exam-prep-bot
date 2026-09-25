@@ -32,6 +32,7 @@ public class StudentPresenter {
   var rows=new ArrayList<List<Map<String,String>>>();
   rows.add(List.of(button(lang,"student.practice","p:menu"),button(lang,"student.mock","m:intro")));
   rows.add(List.of(button(lang,"student.progress","s:progress"),button(lang,"student.help","s:help")));
+  rows.add(List.of(button(lang,s.lifetime()?"payment.activeButton":"payment.upgrade","pay:open"),button(lang,"payment.statusButton","pay:status")));
   if(intro.active()!=null) rows.add(List.of(button(lang,"mock.resume","m:o:"+intro.active().id()+":-1")));
   send(chat,message(lang,"student.welcome",allowance(s,false),allowance(s,true)),rows);
  }

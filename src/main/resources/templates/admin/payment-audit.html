@@ -1,0 +1,13 @@
+<!doctype html><html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Payment audit')}"></head><body><header th:replace="~{admin/fragments :: header}"></header>
+<div class="shell"><nav th:replace="~{admin/fragments :: nav}"></nav><main><h1>Payment audit</h1><p>Read-only history of payment, access and notification events.</p>
+<form method="get" th:action="@{/admin/payment-audit}" class="panel">
+<label>Action<input name="action" th:value="${action}"></label><label>Entity type<input name="entity" th:value="${entity}"></label>
+<label>Actor type<select name="actorType"><option value="">All</option><option th:each="a : ${ {'USER','WEB_ADMIN','SYSTEM'} }" th:value="${a}" th:text="${a}" th:selected="${a==actorType}"></option></select></label>
+<label>Date (UTC)<input name="date" type="date" th:value="${date}"></label><button>Filter</button></form>
+<section class="panel"><table><thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead><tbody>
+<tr th:each="e : ${events}"><td th:text="${e.created}"></td><td th:text="|${e.actorType}: ${e.actor}|"></td><td th:text="${e.action}"></td><td th:text="|${e.entityType} #${e.entityId}|"></td><td th:text="${e.metadata}"></td></tr>
+</tbody></table></section>
+<a th:if="${page>0}" th:href="@{/admin/payment-audit(page=${page-1},action=${action},entity=${entity},actorType=${actorType},date=${date})}">Previous</a>
+<a th:if="${events.size()==25}" th:href="@{/admin/payment-audit(page=${page+1},action=${action},entity=${entity},actorType=${actorType},date=${date})}">Next</a>
+</main></div></body></html>

@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(TelegramBotProperties.class)
+@EnableConfigurationProperties({TelegramBotProperties.class,TelegramAdminProperties.class})
 public class TelegramConfiguration {
 
     @Configuration(proxyBeanMethods = false)
@@ -41,9 +41,11 @@ public class TelegramConfiguration {
         TelegramUpdateHandler telegramUpdateHandler(TelegramBotClient client, MessageSource messages,
                 com.airlineprep.bot.user.RegistrationService registration,
                 com.airlineprep.bot.practice.PracticeService practice,com.airlineprep.bot.mock.MockAttemptService mocks,
-                com.airlineprep.bot.practice.StudentProgressService progress) {
+                com.airlineprep.bot.practice.StudentProgressService progress,
+                com.airlineprep.bot.payment.PaymentService payments) {
             var students=new StudentFlow(practice,mocks,progress,new StudentPresenter(client,messages));
-            return new TelegramUpdateHandler(client, registration, new RegistrationPresenter(client, messages),students);
+            return new TelegramUpdateHandler(client, registration, new RegistrationPresenter(client, messages),students,
+                new PaymentFlow(payments,new StudentPresenter(client,messages)));
         }
 
         @Bean

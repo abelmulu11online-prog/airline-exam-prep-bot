@@ -3,7 +3,7 @@
 One Java 21 / Spring Boot application for Telegram exam preparation and a
 Thymeleaf admin website. [PROJECT_SPEC.md](PROJECT_SPEC.md) defines the product rules.
 
-## Current scope: compressed Phase 6
+## Current scope: compressed Phase 7
 
 - Private-chat registration: /start → English or Amharic → active exam type →
   share your own Telegram contact → registration and free entitlement.
@@ -16,7 +16,9 @@ Thymeleaf admin website. [PROJECT_SPEC.md](PROJECT_SPEC.md) defines the product 
 - Question bank, immutable published versions, lifecycle review, source rights,
   pool eligibility, and staged CSV/XLSX imports.
 - Student practice, unique usage counting, progress, resumable mocks, optional timers,
-  frozen questions, scoring, and answer review. Payments and deployment remain future work.
+  frozen questions, scoring, and answer review.
+- Manual payments, secured review, lifetime grants, notifications, and audit.
+  Production deployment remains future work.
 
 ## Requirements
 
@@ -110,8 +112,8 @@ after initial provisioning; retain them securely for login.
 Open /admin/login. Authenticated administrators can manage:
 
 - Overview: total users, completed registrations, active exams, categories, and current offer.
-- Application settings: free limits, mock size, future lifetime price/currency,
-  future payment flags, and support information.
+- Application settings: free limits, mock size, lifetime price/currency,
+  payment flags, and support information.
 - Exam types and categories: create, list, edit, activate, and deactivate.
 
 Deactivation preserves foreign-key references and history. Inactive exam types
@@ -122,8 +124,7 @@ Codes use lowercase letters, digits, and hyphens; category codes are unique with
 their exam type.
 
 Settings updates affect future registrations only. Existing grants are never
-recalculated. Payment flags are configuration only and do not enable a payment
-workflow in this phase.
+recalculated. Payment flags govern new manual requests. Selected requests may finish evidence submission; pending requests remain reviewable.
 
 Security uses sessions, BCrypt, CSRF-protected POST mutations/logout, generic
 login failures, and admin authorization. GET /actuator/health remains public
@@ -420,3 +421,144 @@ A live question-answer/mock completion check remains unavailable because the liv
 eligible question pools are empty; no entitlement size was reduced. Full student
 flows passed with mocked Telegram transport and fictional integration content.
 No Phase 7 payment workflow or new dependency was added.
+
+## Compressed Phase 7: payments, lifetime access and audit
+
+Students choose Upgrade / Lifetime Access or Payment status from the main menu.
+The current price/currency and benefits are shown before a request starts.
+Payment requires manual verification against the actual financial account;
+no screenshot, reference, receipt, or notification automatically approves it.
+Never send real money for software verification.
+
+Admin Settings controls payment_enabled, manual_payment_enabled, lifetime price,
+currency, and support information. Both flags must be enabled for new requests
+and method selections. Selected requests may finish their evidence submission
+when payments are disabled; pending requests remain reviewable. Disabling payments
+never revokes lifetime access. Existing entitlement snapshots are unchanged.
+
+Manage public Telebirr and bank destinations at /admin/payment-methods. Methods
+have an active flag, display order, holder, destination and instructions. Do not
+enter PINs, OTPs or credentials. Changes use optimistic revisions and affect only
+new selections. Referenced methods are deactivated rather than deleted.
+
+Each request snapshots amount/currency at creation and method instructions at
+selection. One open request per user is enforced by a unique database slot.
+The durable states are SELECT_METHOD → AWAITING_REFERENCE → AWAITING_RECEIPT →
+PENDING_REVIEW → APPROVED or REJECTED. Cancellation is allowed only before review.
+Repeated /start shows the student menu; Payment status resumes evidence collection.
+A rejected/cancelled request can be followed by a new request, with a new reference.
+An already-lifetime user cannot start an unnecessary payment.
+
+References are trimmed, validated as 3–100 ASCII letters/digits plus dot, hyphen,
+underscore or slash, and uppercased with Locale.ROOT. Interior punctuation remains
+significant. The normalized value is globally unique across methods and accounts,
+a deliberately conservative policy that prevents reuse through another method.
+A collision requires support review, never an automatic override. Rejected and
+cancelled references remain reserved. Original spelling is retained for the admin.
+Method/reference selections are immutable; cancel and start again to correct them.
+
+### Receipts and secured review
+
+Receipt photo or JPEG/PNG/PDF document metadata is accepted up to 10 MiB. Missing
+IDs/size/type, dangerous names, MIME/extension mismatch, unsupported formats and
+forwarded evidence are rejected. The largest Telegram photo variant is selected.
+Receipt acceptance submits for review atomically; pending evidence cannot be edited.
+Telegram file_id and file_unique_id are durable storage references. No receipt
+binary or token-bearing URL is saved to the filesystem or exposed to the browser.
+Duplicate file_unique_id is flagged to the reviewer, not automatically rejected.
+
+/admin/payments supports status, method, UTC date and internal user-ID filters
+with 25-row pages. Details preserve the snapshot, evidence, reviewer and latest
+25 request-specific audit events. Only authenticated web admins may download
+receipts. The server looks up the stored file_id, obtains Telegram's file path,
+restricts it to a safe Telegram path, bounds the streamed download and validates
+JPEG/PNG/PDF signatures. Downloads are attachments with no-store and nosniff.
+Retrieval failures return a recoverable error; retry the secured download later.
+No OCR, executable handling, automatic bank integration or payment verification exists.
+
+Approval is a CSRF-protected POST. Under the existing short settings-row lock,
+review status, lifetime grant, unique grant provenance, audit and notification
+outbox entries commit together. Retrying approval is harmless. Approve/reject
+races produce one terminal result. An already-lifetime account receives no second
+grant. Original registration grant fields, limits, counters, practice/mock history
+and active exams are preserved. The separate lifetime_access_grants table records
+payment, user, granting admin and time. Rejection requires a user-visible reason;
+there is no separate internal note that could accidentally be sent to the student.
+
+### Notifications and Telegram admin configuration
+
+Supply TELEGRAM_ADMIN_ID as an optional positive numeric environment value.
+An absent value disables only Telegram admin notifications; payments and web-admin
+review still work. Invalid nonblank values fail configuration validation. The
+.env.example value is a placeholder, not a valid runtime ID. Unset the variable
+to disable notifications. Never hard-code a real ID in tracked files.
+
+The admin ID was discovered once from a new private /start message during an
+explicit development discovery window. Discovery checked getMe, webhook absence,
+a fresh update baseline, sender/private-chat agreement and non-forwarded status.
+That temporary procedure is closed and removed. There is NO automatic discovery,
+first-user-becomes-admin rule, Telegram approval command or web-login bypass in
+this application. Web-admin credentials and Telegram notification identity remain
+separate security boundaries.
+
+Notifications use a durable database outbox, unique per payment/event. A worker
+reads only committed entries every 10 seconds, claims a two-minute lease in a
+short transaction, sends outside any database transaction, then records delivery
+or safe failure. Retries back off by 60 seconds per attempt, with five automatic
+attempts. Admins may retry failed notifications from payment details. No send
+failure rolls back evidence, approval, rejection or access. An absent bot transport
+leaves deliverable notifications queued; an absent admin destination records SKIPPED.
+Exactly-once Telegram delivery cannot be guaranteed after a lost acknowledgement
+or crash, so an ambiguous retry may repeat a message, never a financial transition
+or grant. Only safe summaries are sent; full references remain in secured review.
+
+/admin/payment-audit provides read-only, paginated filtering by action, entity,
+UTC date and actor type. Append-only application flows record request creation,
+method/reference/receipt submission, pending status, cancellation, review, lifetime
+grants and notification outcomes. Existing settings/content audit is preserved.
+No audit update/delete routes exist. Audit metadata excludes references, receipt
+contents, phone identities and secrets.
+
+### Phase 7 schema and verification
+
+- V10__manual_payments.sql: methods, request snapshots, state constraints, reference
+  uniqueness, open-request uniqueness and query indexes.
+- V11__lifetime_grants_and_payment_audit.sql: unique grant provenance and audit events.
+- V12__payment_notification_outbox.sql: durable notification state and retry indexes.
+
+V1–V9 are unchanged. No additional dependencies are required.
+
+```powershell
+.\mvnw.cmd '-Dtest=PaymentServiceTests,PaymentConcurrencyTests,PaymentWebTests,PaymentTelegramTests,PaymentNotificationTests,ReceiptTests,TelegramAdminPropertiesTests,TelegramReceiptClientTests' test
+.\mvnw.cmd test
+.\mvnw.cmd package
+# Explicit real development PostgreSQL verification with securely supplied DB
+# password and the established phone HMAC key; scenario writes roll back:
+.\mvnw.cmd '-Dtest=PaymentPostgresIT' test
+# Use 8081 when another project owns 8080:
+$env:SERVER_PORT='8081'
+java -jar target/airline-exam-prep-bot-0.0.1.jar
+```
+
+The automatic suite uses isolated databases and mocked Telegram/network transport.
+Live receipt uploads require a real human's harmless test image; never fabricate
+inbound Telegram updates. No real transfer or sensitive financial receipt is needed.
+Phase 7 excludes production deployment, production webhooks and Phase 8 work.
+
+Development verification: the full suite contains 294 tests, plus a separately
+invoked real-PostgreSQL payment integration test whose scenario rolls back.
+Live checks exercised authenticated review, CSRF rejection, rejection without an
+access grant, repeated approval with exactly one lifetime grant, append-only audit,
+and delivery of both admin and user notifications. The development account became
+lifetime through normal secured approval; its registration grant fields, limits,
+usage counters and existing history were preserved. Temporary development methods
+were deactivated and the original payment flags restored. No financial transfer
+occurred. The one-time discovery and fixture helpers were removed after use.
+
+No human receipt attachment was available for this run. Live review used explicit
+synthetic metadata supplied through the payment service, without fabricating inbound
+Telegram traffic or a bank receipt. Real Telegram file retrieval remains a live user
+check; receipt parsing, authorization, bounded download and file-signature validation
+are covered by automated tests. Do not treat development approvals as financial
+evidence. Retry tests use a controlled clock, and receipt failures return explicit
+HTTP responses so servlet error dispatch cannot obscure the intended status.

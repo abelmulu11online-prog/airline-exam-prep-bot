@@ -58,6 +58,25 @@ public class TelegramBotClient {
         }
     }
 
+    public byte[] receiptBytes(String fileId) throws InterruptedException {
+        var file=request("getFile",Map.of("file_id",fileId));
+        String path=file.path("file_path").asText("");
+        int maximum=com.airlineprep.bot.payment.ReceiptMetadata.MAX_BYTES;
+        if(!path.matches("[A-Za-z0-9_-]+/[A-Za-z0-9_.-]+")||path.contains("..")
+                ||file.path("file_size").asLong(maximum+1L)>maximum) throw new ApiException(0,0);
+        try {
+            var request=HttpRequest.newBuilder(URI.create("https://api.telegram.org/file/bot"+properties.token()+"/"+path))
+                .timeout(Duration.ofSeconds(40)).GET().build();
+            var response=httpClient.send(request,HttpResponse.BodyHandlers.ofInputStream());
+            try(var input=response.body()) {
+                if(response.statusCode()!=200) throw new ApiException(response.statusCode(),0);
+                byte[] bytes=input.readNBytes(maximum+1);
+                if(bytes.length>maximum) throw new ApiException(0,0);
+                return bytes;
+            }
+        } catch(IOException|RuntimeException exception) {throw new ApiException(0,0);}
+    }
+
     private JsonNode request(String method, Map<String, ?> body) throws InterruptedException {
         try {
             HttpRequest request = HttpRequest.newBuilder()

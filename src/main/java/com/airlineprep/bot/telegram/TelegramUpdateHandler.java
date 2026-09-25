@@ -13,9 +13,15 @@ public class TelegramUpdateHandler {
     private final RegistrationService registration;
     private final RegistrationPresenter presenter;
     private final StudentFlow students;
+    private final PaymentFlow payments;
 
     public TelegramUpdateHandler(TelegramBotClient client, RegistrationService registration,
                                  RegistrationPresenter presenter,StudentFlow students) {
+        this(client,registration,presenter,students,null);
+    }
+    public TelegramUpdateHandler(TelegramBotClient client, RegistrationService registration,
+                                 RegistrationPresenter presenter,StudentFlow students,PaymentFlow payments) {
+        this.payments=payments;
         this.students=students;
         this.client = client; this.registration = registration; this.presenter = presenter;
     }
@@ -45,6 +51,7 @@ public class TelegramUpdateHandler {
                     show(chatId, registration.exam(senderId, Long.parseLong(data.substring(5))));
                 else if(data.startsWith("s:")||data.startsWith("p:")||data.startsWith("m:"))
                     students.callback(senderId,data);
+                else if(data.startsWith("pay:")&&payments!=null) payments.callback(senderId,data);
                 return;
             }
             if (message.path("contact").isObject()) {
@@ -62,7 +69,7 @@ public class TelegramUpdateHandler {
                     && command.substring(7).equalsIgnoreCase(botUsername))) {
                 show(chatId, registration.start(senderId));
                 log.debug("Telegram registration step sent");
-            }
+            } else if(payments!=null&&!command.startsWith("/")) payments.message(senderId,message);
         } catch (DataAccessException | TransactionException exception) {
             // Database exception details may contain private bind values.
             log.warn("Registration storage unavailable; user may retry /start");

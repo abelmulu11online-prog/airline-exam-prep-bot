@@ -54,6 +54,8 @@ logging:
     jdk.internal.net.http: OFF
 
 telegram:
+  admin:
+    id: ${TELEGRAM_ADMIN_ID:}
   bot:
     enabled: ${TELEGRAM_BOT_ENABLED:false}
     token: ${TELEGRAM_BOT_TOKEN:}

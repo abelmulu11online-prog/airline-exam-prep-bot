@@ -1,0 +1,15 @@
+<!doctype html><html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Payment method')}"></head><body>
+<header th:replace="~{admin/fragments :: header}"></header><div class="shell"><nav th:replace="~{admin/fragments :: nav}"></nav><main>
+<h1>Payment method</h1><p>Changes affect new selections. Existing payment instructions remain preserved.</p>
+<form class="panel" th:action="${action}" th:object="${form}" method="post">
+<p class="notice error" th:each="error : ${#fields.errors('*')}" th:text="${error}"></p>
+<input type="hidden" th:field="*{revision}">
+<label>Type<select th:field="*{type}"><option value="TELEBIRR">Telebirr</option><option value="BANK_TRANSFER">Bank transfer</option></select></label>
+<label>Display name<input th:field="*{displayName}" maxlength="100" required></label>
+<label>Account holder<input th:field="*{accountName}" maxlength="100" required></label>
+<label>Public destination / account / phone<input th:field="*{destination}" maxlength="150" required></label>
+<label>Instructions<textarea th:field="*{instructions}" maxlength="2000"></textarea></label>
+<label>Display order<input type="number" min="0" th:field="*{displayOrder}" required></label>
+<label><input type="checkbox" th:field="*{active}"> Active</label>
+<button type="submit">Save method</button></form></main></div></body></html>

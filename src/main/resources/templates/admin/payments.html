@@ -1,0 +1,15 @@
+<!doctype html><html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Payments')}"></head><body><header th:replace="~{admin/fragments :: header}"></header>
+<div class="shell"><nav th:replace="~{admin/fragments :: nav}"></nav><main><h1>Payments</h1>
+<form method="get" th:action="@{/admin/payments}" class="panel">
+<label>Status<select name="status"><option value="">All</option><option th:each="s : ${T(com.airlineprep.bot.payment.PaymentStatus).values()}" th:value="${s}" th:text="${s}" th:selected="${s.name()==status}"></option></select></label>
+<label>Method ID<input name="method" type="number" min="1" th:value="${method}"></label>
+<label>User ID<input name="user" type="number" min="1" th:value="${user}"></label>
+<label>Created date (UTC)<input name="date" type="date" th:value="${date}"></label><button>Filter</button></form>
+<section class="panel"><table><thead><tr><th>Request</th><th>User</th><th>Status</th><th>Amount</th><th>Method</th><th>Created</th></tr></thead><tbody>
+<tr th:each="p : ${rows}"><td><a th:href="@{/admin/payments/{id}(id=${p.id})}" th:text="${p.id}"></a></td><td th:text="${p.userId}"></td>
+<td th:text="${p.status}"></td><td th:text="|${p.amount} ${p.currency}|"></td><td th:text="${p.methodName}"></td><td th:text="${p.created}"></td></tr>
+</tbody></table></section>
+<a th:if="${page>0}" th:href="@{/admin/payments(page=${page-1},status=${status},method=${method},user=${user},date=${date})}">Previous</a>
+<a th:if="${rows.size()==25}" th:href="@{/admin/payments(page=${page+1},status=${status},method=${method},user=${user},date=${date})}">Next</a>
+</main></div></body></html>

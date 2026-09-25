@@ -4,7 +4,7 @@
 
 This document is the source of truth for subsequent development of the airline written-exam preparation platform. Read it completely before changing the project. Explicitly agreed requirement changes must be reflected here rather than silently changing product behavior.
 
-The current milestone is **Compressed Phase 6: Complete Exam Engine**, built on the verified compressed Phase 5 baseline. It adds student practice, unique first-answer usage, progress, frozen resumable mocks, optional server-side timers, scoring, and review. Earlier registration, admin, content, and import behavior remains intact. Payments and production deployment remain future work.
+The current milestone is **Compressed Phase 7: Payments, Lifetime Access & Audit**, built on the verified compressed Phase 6 baseline. It adds manual payment requests, snapshots, evidence, secured review, transactional lifetime grants, notifications and audit. Earlier registration, content and exam behavior remains intact. Production deployment remains future work.
 
 Requirements below are planned Version 1 capabilities unless labeled optional, future, or a decision to resolve. Implement only the structures needed by the active phase.
 
@@ -320,7 +320,7 @@ The following are not required for Version 1: React admin frontend, Flutter or R
 
 ## 15. Development roadmap
 
-The explicitly authorized compressed roadmap supersedes the scheduling of the original small phases below: **Compressed Phase 4** combines original Phases 4–8 (registration, entitlement foundation, admin, settings, exam types/categories). **Compressed Phase 5** is Question Bank & Content Management. **Compressed Phase 6** implements the complete exam engine. Compressed Phase 7 payments remain unimplemented. The original roadmap is retained as architectural history; its phase numbering does not prohibit the authorized combined scope.
+The explicitly authorized compressed roadmap supersedes the scheduling of the original small phases below: **Compressed Phase 4** combines original Phases 4–8 (registration, entitlement foundation, admin, settings, exam types/categories). **Compressed Phase 5** is Question Bank & Content Management. **Compressed Phase 6** implements the complete exam engine. **Compressed Phase 7** implements manual payments, lifetime access and audit. The original roadmap is retained as architectural history; its phase numbering does not prohibit the authorized combined scope.
 
 ### Compressed Phase 4 decisions
 
@@ -342,7 +342,7 @@ The explicitly authorized compressed roadmap supersedes the scheduling of the or
 - Duplicate fingerprints use Unicode normalization, case folding, and whitespace folding within an exam type, including retained historical versions. Same text/options/key is exact; same text with changed options/key is likely. Both are skipped for human review; punctuation is preserved to avoid collapsing distinct mathematical expressions. No silent merge or automatic override exists.
 - Upload limits are 2 MiB/file, 3 MiB/request, 500 data rows, one XLSX sheet, 20 MiB expanded workbook, and 1,000 ZIP parts. Formula/error cells, macros, external links, and embedded objects are rejected. README documents the exact headers and cell limits. Upload bytes are not retained as filesystem files.
 - V4–V6 are additive migrations following V1–V3. V6 guarantees deterministic stale-edit protection independently of clock resolution. Content pages retain existing admin authentication, CSRF, escaped rendering, and audit context. The live fictional verification content is archived and its temporary taxonomy deactivated.
-- Compressed Phase 5 content management is complete. Compressed Phase 6 adds the exam engine; payments and production deployment remain unimplemented.
+- Compressed Phase 5 content management is complete. Compressed Phase 6 adds the exam engine; payments are added by compressed Phase 7; production deployment remains unimplemented.
 
 ### Original incremental roadmap (historical)
 
@@ -416,7 +416,7 @@ These decisions do not block the Phase 2 technical foundation and must not be fi
 - Registration: controlled HMAC key rotation and recovery policy for a previously claimed phone identity. Normalization, HMAC adoption, and stable-key requirements are defined in the compressed Phase 4 decisions above.
 - Practice/progress decisions are resolved by the compressed Phase 6 decisions below.
 - Mock engine decisions are resolved by the compressed Phase 6 decisions below; category blueprints remain future scope.
-- Payments: request/submission state transitions, reference uniqueness/normalization by method, resubmissions, pending-request reuse/expiry, and pending handling when payments are disabled.
+- Payment decisions are resolved in the compressed Phase 7 decisions below.
 - Admin/operations: credential provisioning, detailed authorization, audit/data retention, production transport/hosting, backup schedule, and recovery objectives.
 
 ## 18. Specification validation baseline
@@ -469,3 +469,37 @@ Phase 1 delivers this document only. No implementation or operational verificati
   uniqueness protect concurrent usage/attempt creation; network sends follow commit.
 - Live human actions cannot be fabricated. Successful transport plus automated
   engine/Telegram E2E verification may be reported PASS-WITH-LIVE-USER-CHECK.
+
+## 20. Compressed Phase 7 decisions
+
+- Manual payment is isolated behind PaymentService. Telebirr and bank transfer
+  methods contain public destinations only, managed through secured web admin.
+- One open payment per user. Price/currency snapshot at creation; method details
+  snapshot at selection. Later edits never rewrite instructions already shown.
+- SELECT_METHOD → AWAITING_REFERENCE → AWAITING_RECEIPT → PENDING_REVIEW →
+  APPROVED/REJECTED. Cancellation only before pending review; no request expiry.
+  New requests follow cancellation/rejection; selected evidence is immutable.
+- Both payment flags gate creation and method selection. Already-selected requests
+  may finish evidence while disabled; pending review remains available.
+- References use ASCII validation, surrounding-whitespace trimming and uppercase
+  case folding, preserving punctuation. Global normalized uniqueness is conservative
+  across methods. Cancelled/rejected references remain reserved; no reuse override.
+- Telegram photo or JPEG/PNG/PDF receipt metadata, maximum 10 MiB, is retained using
+  file_id/file_unique_id. Forwarded receipts are rejected. Duplicate file IDs are a
+  review signal. Secured bounded server downloads check file signatures; no permanent
+  receipt binaries or token URLs are stored/exposed. Receipts do not prove payment.
+- Approval, access provenance, terminal state and audit commit atomically. Existing
+  snapshots, registration grant fields, usage and exam history remain unchanged.
+  Already-lifetime accounts receive no duplicate grant. Rejection needs a meaningful
+  user-visible reason; no internal review notes are sent accidentally.
+- Notifications use a durable unique outbox and run after commit, outside database
+  transactions. Five automatic retries plus admin retry preserve business state.
+  Ambiguous Telegram sends may repeat a message, never a grant or review transition.
+- TELEGRAM_ADMIN_ID is optional runtime configuration for notifications only. The
+  development ID was discovered once from a new non-forwarded private /start in an
+  explicit window; no application discovery or first-user enrollment exists.
+  Telegram identity never authenticates web admin or grants database permissions.
+- Payment audit is append-only through application flows, filtered and paginated.
+  Sensitive financial evidence remains in secured review, not audit metadata/logs.
+- V10–V12 are additive; V1–V9 remain intact. No production deployment, production
+  webhook, automatic financial verification or compressed Phase 8 work is included.

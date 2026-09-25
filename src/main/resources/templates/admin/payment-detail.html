@@ -1,0 +1,23 @@
+<!doctype html><html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Payment review')}"></head><body><header th:replace="~{admin/fragments :: header}"></header>
+<div class="shell"><nav th:replace="~{admin/fragments :: nav}"></nav><main><h1 th:text="|Payment #${payment.id}|"></h1>
+<section class="panel"><dl>
+<dt>User ID</dt><dd th:text="${payment.userId}"></dd><dt>Status</dt><dd th:text="${payment.status}"></dd>
+<dt>Expected amount</dt><dd th:text="|${payment.amount} ${payment.currency}|"></dd>
+<dt>Method</dt><dd th:text="${payment.methodName}"></dd><dt>Account holder</dt><dd th:text="${payment.accountName}"></dd>
+<dt>Destination shown</dt><dd th:text="${payment.destination}"></dd><dt>Instructions shown</dt><dd th:text="${payment.instructions}"></dd>
+<dt>Transaction reference</dt><dd th:text="${payment.reference}"></dd><dt>Submitted</dt><dd th:text="${payment.submitted}"></dd>
+<dt>Reviewed</dt><dd th:text="${payment.reviewed}"></dd><dt>Reviewer</dt><dd th:text="${payment.reviewer}"></dd>
+<dt>User-visible rejection reason</dt><dd th:text="${payment.rejectionReason}"></dd></dl>
+<a th:if="${payment.receipt != null}" th:href="@{/admin/payments/{id}/receipt(id=${payment.id})}">Download receipt securely</a>
+<p th:if="${duplicates>0}" class="notice" th:text="|The same receipt appears on ${duplicates} other request(s). Verify independently; this is a review signal.|"></p>
+</section>
+<section class="panel" th:if="${payment.status.name()=='PENDING_REVIEW'}"><h2>Verify the actual transaction</h2>
+<p>Match the reference, destination, amount and currency against your financial account. A screenshot alone is not proof of payment.</p>
+<form th:action="@{/admin/payments/{id}/approve(id=${payment.id})}" method="post"><button>Approve and activate lifetime access</button></form>
+<form th:action="@{/admin/payments/{id}/reject(id=${payment.id})}" method="post"><label>Reason shown to the student<textarea name="reason" maxlength="500" required></textarea></label><button>Reject payment</button></form></section>
+<section class="panel"><h2>Notifications</h2><p>Failed notifications can be retried without changing the payment decision.</p>
+<form th:action="@{/admin/payments/{id}/retry-notification(id=${payment.id})}" method="post"><button>Retry failed notifications</button></form></section>
+<section class="panel"><h2>Recent audit events</h2><p th:each="e : ${events}" th:text="|${e.created} — ${e.actorType} ${e.actor}: ${e.action} (${e.metadata})|"></p>
+<a th:href="@{/admin/payment-audit(entity='PAYMENT')}">Browse audit history</a></section>
+</main></div></body></html>
