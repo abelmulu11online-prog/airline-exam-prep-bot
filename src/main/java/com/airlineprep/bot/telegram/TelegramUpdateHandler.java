@@ -55,10 +55,15 @@ public class TelegramUpdateHandler {
                 return;
             }
             if (message.path("contact").isObject()) {
+                if (message.has("forward_origin") || message.has("forward_date") || message.has("forward_from")
+                        || message.has("forward_from_chat") || message.path("is_automatic_forward").asBoolean()) {
+                    show(chatId, registration.contact(senderId, null, null));
+                    return;
+                }
                 var contact = message.path("contact");
                 var result=registration.contact(senderId,
                     positiveId(contact.path("user_id")), contact.path("phone_number").asText(null));
-                if(result.status()==com.airlineprep.bot.user.RegistrationStatus.COMPLETED) presenter.show(chatId,result);
+                if(result.status()==com.airlineprep.bot.user.RegistrationStatus.COMPLETED) presenter.removeContactKeyboard(chatId,result.language());
                 show(chatId,result);
                 log.debug("Telegram contact update handled");
                 return;

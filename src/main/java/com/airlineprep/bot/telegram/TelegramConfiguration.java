@@ -42,8 +42,8 @@ public class TelegramConfiguration {
                 com.airlineprep.bot.user.RegistrationService registration,
                 com.airlineprep.bot.practice.PracticeService practice,com.airlineprep.bot.mock.MockAttemptService mocks,
                 com.airlineprep.bot.practice.StudentProgressService progress,
-                com.airlineprep.bot.payment.PaymentService payments) {
-            var students=new StudentFlow(practice,mocks,progress,new StudentPresenter(client,messages));
+                com.airlineprep.bot.payment.PaymentService payments,com.airlineprep.bot.settings.SettingsService settings) {
+            var students=new StudentFlow(practice,mocks,progress,new StudentPresenter(client,messages),settings);
             return new TelegramUpdateHandler(client, registration, new RegistrationPresenter(client, messages),students,
                 new PaymentFlow(payments,new StudentPresenter(client,messages)));
         }

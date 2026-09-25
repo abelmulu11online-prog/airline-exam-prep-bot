@@ -3,6 +3,7 @@
 <head th:replace="~{admin/fragments :: head('Import questions')}"></head>
 <body><header th:replace="~{admin/fragments :: header}"></header><div class="shell"><nav th:replace="~{admin/fragments :: nav}"></nav><main>
 <h1>Import questions</h1><p class="notice error" role="alert" th:if="${error}" th:text="${error}"></p>
+<p class="empty" th:if="${batches.isEmpty()}">No imports yet. Download the template, fill it in, and upload it for preview.</p>
 
 <p>Upload UTF-8 CSV or XLSX (2 MiB, 500 rows). XLSX must contain exactly one sheet, with no formulas or macros. Use exam and category codes. New questions are drafts after confirmation.</p>
 <p><a th:href="@{/admin/questions/import/template.csv}">Download CSV template</a> (may also be opened and saved as XLSX)</p>

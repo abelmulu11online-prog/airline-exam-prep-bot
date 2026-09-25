@@ -41,5 +41,8 @@ public class RegistrationPresenter {
     public void unavailable(long chatId) throws InterruptedException {
         client.sendMessage(chatId, message("registration.retry", Locale.ENGLISH));
     }
+    public void removeContactKeyboard(long chatId,String language) throws InterruptedException {
+        client.sendMessage(chatId,message("registration.ready",Locale.forLanguageTag(language)),Map.of("remove_keyboard",true));
+    }
     private String message(String key, Locale locale) { return messages.getMessage(key, null, locale); }
 }

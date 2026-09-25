@@ -7,10 +7,10 @@ public class PaymentFlow {
  private final PaymentService payments;private final StudentPresenter ui;
  public PaymentFlow(PaymentService p,StudentPresenter ui) {payments=p;this.ui=ui;}
  public void callback(long sender,String data) throws InterruptedException {
-  if(data==null||data.length()>64||!data.matches("[a-z0-9:-]+")) return;
   String lang="en";
   try {
    var v=payments.status(sender);lang=v.student().language();
+   if(data==null||data.length()>64||!data.matches("pay:(open|status)|pay:start:[a-z0-9-]+|pay:(method|page):[0-9]+:[0-9]+|pay:cancel:[0-9]+")) throw new ExamException("student.invalid");
    if(data.equals("pay:open")||data.equals("pay:status")) {show(sender,v);return;}
    String[] parts=data.split(":");if(parts.length<3) return;
    if(parts[1].equals("start")&&parts.length==3) {show(sender,payments.start(sender,parts[2]));return;}

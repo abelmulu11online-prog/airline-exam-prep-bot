@@ -46,7 +46,7 @@ public class TelegramLongPollingService implements SmartLifecycle {
                     Thread.sleep(250);
                 } catch (TelegramBotClient.ApiException exception) {
                     log.warn("Telegram API/network failure (code {}); polling will back off", exception.code());
-                    long delay = Math.max(backoffSeconds, exception.retryAfterSeconds());
+                    long delay = retryDelay(backoffSeconds, exception.retryAfterSeconds());
                     // Duration-based sleep avoids overflow when converting retry_after to milliseconds.
                     Thread.sleep(java.time.Duration.ofSeconds(delay));
                     backoffSeconds = Math.min(backoffSeconds * 2, 60);
@@ -89,6 +89,7 @@ public class TelegramLongPollingService implements SmartLifecycle {
             }
         }
     }
+    static long retryDelay(long backoff,long requested) { return Math.max(backoff,Math.min(Math.max(0,requested),3600)); }
 
     @Override
     public void stop() {

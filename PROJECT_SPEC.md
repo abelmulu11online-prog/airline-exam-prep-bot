@@ -4,7 +4,7 @@
 
 This document is the source of truth for subsequent development of the airline written-exam preparation platform. Read it completely before changing the project. Explicitly agreed requirement changes must be reflected here rather than silently changing product behavior.
 
-The current milestone is **Compressed Phase 7: Payments, Lifetime Access & Audit**, built on the verified compressed Phase 6 baseline. It adds manual payment requests, snapshots, evidence, secured review, transactional lifetime grants, notifications and audit. Earlier registration, content and exam behavior remains intact. Production deployment remains future work.
+The current milestone is **Compressed Phase 8: Security, UX & Full Testing**, built on the verified compressed Phase 7 baseline. It hardens existing security boundaries, user guidance, imports and notification recovery, and adds adversarial, end-to-end and repeated regression verification. Registration, content, exam and payment business rules remain intact. Production deployment remains future work; PHASE8_REVIEW.md records evidence, limitations and the Phase 9 handoff.
 
 Requirements below are planned Version 1 capabilities unless labeled optional, future, or a decision to resolve. Implement only the structures needed by the active phase.
 
@@ -503,3 +503,21 @@ Phase 1 delivers this document only. No implementation or operational verificati
   Sensitive financial evidence remains in secured review, not audit metadata/logs.
 - V10–V12 are additive; V1–V9 remain intact. No production deployment, production
   webhook, automatic financial verification or compressed Phase 8 work is included.
+
+## 21. Compressed Phase 8 decisions
+
+- Preserve V1 business rules and applied V1-V12 migrations. V13 adds only an outbox
+  claim token to fence stale completion and recover exhausted abandoned claims.
+- Bound local admin login attempts by direct peer; retain BCrypt, session rotation,
+  CSRF and ADMIN authorization. Add script-free CSP, safe error recovery, 30-minute
+  sessions and configurable secure cookies for the later HTTPS deployment.
+- Reject forwarded contacts, malformed callback shapes, contradictory upload MIME
+  types and unsafe ZIP entry paths. Keep all existing input and expansion limits.
+- Honor bounded Telegram retry-after values without holding database transactions.
+  Network failures never roll back already-committed usage, evidence or grants.
+- Verify localization parity, restart persistence, rollback, concurrent retry claims,
+  adversarial imports, complete student/admin journeys and repeated regressions.
+- Patch embedded Tomcat to 10.1.60 without adding dependencies. Document framework
+  support and operational limitations in PHASE8_REVIEW.md for Phase 9.
+- No production deployment, DNS, HTTPS provisioning, production database or webhook
+  is part of this phase. A live human receipt check remains optional.

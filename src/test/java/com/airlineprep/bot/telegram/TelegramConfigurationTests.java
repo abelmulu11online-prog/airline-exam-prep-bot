@@ -103,6 +103,8 @@ class TelegramConfigurationTests {
         contextRunner.withPropertyValues("telegram.bot.enabled=true",
                         "telegram.bot.token=123456:unit-test-placeholder")
                 .withBean(ObjectMapper.class, ObjectMapper::new)
+                .withBean(com.airlineprep.bot.settings.SettingsService.class,
+                        () -> mock(com.airlineprep.bot.settings.SettingsService.class))
                 .withBean(com.airlineprep.bot.payment.PaymentService.class,
                         () -> mock(com.airlineprep.bot.payment.PaymentService.class))
                 .withBean(com.airlineprep.bot.practice.PracticeService.class,

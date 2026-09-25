@@ -5,15 +5,17 @@ import com.airlineprep.bot.common.ExamException;
 public class StudentFlow {
  private final PracticeService practice;private final MockAttemptService mocks;
  private final StudentProgressService progress;private final StudentPresenter presenter;
- public StudentFlow(PracticeService p,MockAttemptService m,StudentProgressService g,StudentPresenter ui) { practice=p;mocks=m;progress=g;presenter=ui; }
+ private final com.airlineprep.bot.settings.SettingsService settings;
+ public StudentFlow(PracticeService p,MockAttemptService m,StudentProgressService g,StudentPresenter ui) { this(p,m,g,ui,null); }
+ public StudentFlow(PracticeService p,MockAttemptService m,StudentProgressService g,StudentPresenter ui,com.airlineprep.bot.settings.SettingsService settings) { practice=p;mocks=m;progress=g;presenter=ui;this.settings=settings; }
  public void menu(long sender) throws InterruptedException { presenter.menu(sender,mocks.introduction(sender)); }
  public void callback(long sender,String data) throws InterruptedException {
-  if(data==null||data.length()>64||!data.matches("[a-z0-9:-]+")) return;
   String lang="en";
   try {
    var intro=mocks.introduction(sender);lang=intro.student().language();
+   if(data==null||data.length()>64||!data.matches("s:(home|help|progress)|p:menu|m:intro|p:(g|c|n|r):[0-9]+|p:a:[0-9]+:[0-9]+|m:s:[a-z0-9-]+|m:(o|r):[0-9]+:-?[0-9]+|m:a:[0-9]+:[0-9]+:[0-9]+:[0-9]+|m:f:[0-9]+")) throw new ExamException("student.invalid");
    if(data.equals("s:home")) presenter.menu(sender,intro);
-   else if(data.equals("s:help")) presenter.help(sender,lang);
+   else if(data.equals("s:help")) presenter.help(sender,lang,settings==null?"":settings.current().getSupportInfo());
    else if(data.equals("s:progress")) presenter.progress(sender,progress.get(sender));
    else if(data.equals("p:menu")) presenter.categories(sender,intro.student(),practice.categories(sender));
    else if(data.equals("m:intro")) presenter.intro(sender,intro);

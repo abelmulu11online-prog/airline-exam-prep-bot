@@ -30,6 +30,14 @@ public class SecurityConfiguration {
                 .logout(logout -> logout.logoutUrl("/admin/logout").logoutSuccessUrl("/admin/login?logout")
                     .invalidateHttpSession(true).deleteCookies("JSESSIONID"))
                 .httpBasic(AbstractHttpConfigurer::disable)
+                .headers(headers -> headers
+                    .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"))
+                    .referrerPolicy(policy -> policy.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER)))
+                .addFilterBefore(new LoginThrottleFilter(), org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(errors -> errors.accessDeniedHandler((request,response,error) -> {
+                    response.setStatus(403); response.setContentType("text/html;charset=UTF-8");
+                    response.getWriter().write("<!doctype html><html lang=\"en\"><title>Action unavailable</title><h1>Action unavailable</h1><p>Your session may have expired. Sign in again, reload the form and try again.</p><a href=\"/admin/login\">Sign in</a></html>");
+                }))
                 .build();
     }
 
@@ -37,6 +45,7 @@ public class SecurityConfiguration {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(authorize -> authorize
+                        .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .anyRequest().denyAll())
                 .formLogin(AbstractHttpConfigurer::disable)

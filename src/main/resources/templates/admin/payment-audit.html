@@ -1,6 +1,7 @@
 <!doctype html><html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{admin/fragments :: head('Payment audit')}"></head><body><header th:replace="~{admin/fragments :: header}"></header>
 <div class="shell"><nav th:replace="~{admin/fragments :: nav}"></nav><main><h1>Payment audit</h1><p>Read-only history of payment, access and notification events.</p>
+<p class="empty" th:if="${events.isEmpty()}">No audit entries match these filters.</p>
 <form method="get" th:action="@{/admin/payment-audit}" class="panel">
 <label>Action<input name="action" th:value="${action}"></label><label>Entity type<input name="entity" th:value="${entity}"></label>
 <label>Actor type<select name="actorType"><option value="">All</option><option th:each="a : ${ {'USER','WEB_ADMIN','SYSTEM'} }" th:value="${a}" th:text="${a}" th:selected="${a==actorType}"></option></select></label>

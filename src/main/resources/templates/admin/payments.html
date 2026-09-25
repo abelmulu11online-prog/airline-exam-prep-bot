@@ -1,6 +1,7 @@
 <!doctype html><html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{admin/fragments :: head('Payments')}"></head><body><header th:replace="~{admin/fragments :: header}"></header>
 <div class="shell"><nav th:replace="~{admin/fragments :: nav}"></nav><main><h1>Payments</h1>
+<p class="empty" th:if="${rows.isEmpty()}">No payments match these filters.</p>
 <form method="get" th:action="@{/admin/payments}" class="panel">
 <label>Status<select name="status"><option value="">All</option><option th:each="s : ${T(com.airlineprep.bot.payment.PaymentStatus).values()}" th:value="${s}" th:text="${s}" th:selected="${s.name()==status}"></option></select></label>
 <label>Method ID<input name="method" type="number" min="1" th:value="${method}"></label>

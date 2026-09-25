@@ -2,6 +2,8 @@
 <head th:replace="~{admin/fragments :: head('Payment methods')}"></head><body>
 <header th:replace="~{admin/fragments :: header}"></header><div class="shell"><nav th:replace="~{admin/fragments :: nav}"></nav><main>
 <h1>Payment methods</h1><p>Public payment destinations only. Never enter PINs, passwords, or OTPs.</p>
+<p class="notice" role="status" th:if="${param.saved}">Payment method saved.</p>
+<p class="empty" th:if="${rows.isEmpty()}">No payment methods yet. Add a method to configure payment instructions.</p>
 <a class="button" th:href="@{/admin/payment-methods/new}">Add method</a>
 <section class="panel"><table><thead><tr><th>Method</th><th>Type</th><th>Active</th><th>Order</th><th></th></tr></thead><tbody>
 <tr th:each="row : ${rows}"><td th:text="${row.details.displayName}"></td><td th:text="${row.details.type}"></td>

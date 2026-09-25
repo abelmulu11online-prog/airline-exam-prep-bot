@@ -13,6 +13,20 @@ import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.*;
 
 class TelegramUpdateHandlerTests {
+    @ParameterizedTest @ValueSource(strings={"forward_origin","forward_date","forward_from","forward_from_chat","is_automatic_forward"})
+    void forwardedContactsCannotCompleteRegistration(String field) throws Exception {
+        var update=(com.fasterxml.jackson.databind.node.ObjectNode)message("");
+        var body=(com.fasterxml.jackson.databind.node.ObjectNode)update.path("message");body.put(field,true);
+        body.set("contact",mapper.valueToTree(Map.of("user_id",12,"phone_number","0912345678")));
+        when(registration.contact(12,null,null)).thenReturn(view(RegistrationStatus.PHONE_REQUIRED));
+        handler.handle(update,"AirlineTestBot");verify(registration).contact(12,null,null);
+        verify(registration,never()).contact(eq(12L),eq(12L),anyString());
+    }
+    @Test void retryDelayHonorsRateLimitButCapsUntrustedExtremeValues() {
+        assertThat(TelegramLongPollingService.retryDelay(2,30)).isEqualTo(30);
+        assertThat(TelegramLongPollingService.retryDelay(60,0)).isEqualTo(60);
+        assertThat(TelegramLongPollingService.retryDelay(2,Long.MAX_VALUE)).isEqualTo(3600);
+    }
     final ObjectMapper mapper = new ObjectMapper();
     final TelegramBotClient client = mock(TelegramBotClient.class);
     final RegistrationService registration = mock(RegistrationService.class);

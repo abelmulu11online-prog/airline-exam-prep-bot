@@ -129,4 +129,5 @@ public class StudentPresenter {
   send(chat,message(lang,key),rows);
  }
  public void help(long chat,String lang) throws InterruptedException { send(chat,message(lang,"student.helpText"),home(lang)); }
+ public void help(long chat,String lang,String support) throws InterruptedException { send(chat,message(lang,"student.helpText")+"\n\n"+message(lang,"student.paymentHelp")+(support.isBlank()?"":"\n\n"+support),home(lang)); }
 }

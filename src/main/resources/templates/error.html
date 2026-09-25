@@ -1,0 +1,6 @@
+<!doctype html><html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Request unavailable</title><link rel="stylesheet" href="/assets/admin.css"></head>
+<body><main><h1>Request unavailable</h1><p th:if="${status==404}">This page could not be found. Check the address or return to the dashboard.</p>
+<p th:if="${status==403}">Your session may have expired or this action is not permitted. Sign in and reload the form.</p>
+<p th:if="${status!=404 and status!=403}">We could not complete this request. Reload the page and check the current state before retrying.</p>
+<a href="/admin">Return to dashboard</a> · <a href="/admin/login">Sign in</a></main></body></html>

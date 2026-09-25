@@ -14,6 +14,12 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 @SpringBootTest @Transactional
 class MockEngineTests extends EngineFixture {
+ @Test void answerJustBeforeDeadlineThenSubmitAfterDeadlineUsesFrozenScore() {
+  duration(1);content(2);var opened=start("near-deadline");long id=opened.attempt().id();
+  when(clock.instant()).thenReturn(now.plusSeconds(59));mocks.answer(sender,id,0,0,0);
+  when(clock.instant()).thenReturn(now.plusSeconds(61));var result=mocks.submit(sender,id);
+  assertThat(result.attempt().status()).isEqualTo("EXPIRED");assertThat(result.score().correct()).isEqualTo(1);assertThat(result.score().unanswered()).isEqualTo(1);assertThat(grant().getMocksUsed()).isEqualTo(1);
+ }
  @Autowired MockAttemptService mocks;
  @Autowired StudentProgressService progress;
  @Autowired PracticeService practice;

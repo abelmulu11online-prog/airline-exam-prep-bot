@@ -3,7 +3,7 @@
 One Java 21 / Spring Boot application for Telegram exam preparation and a
 Thymeleaf admin website. [PROJECT_SPEC.md](PROJECT_SPEC.md) defines the product rules.
 
-## Current scope: compressed Phase 7
+## Current scope: compressed Phase 8
 
 - Private-chat registration: /start → English or Amharic → active exam type →
   share your own Telegram contact → registration and free entitlement.
@@ -18,12 +18,15 @@ Thymeleaf admin website. [PROJECT_SPEC.md](PROJECT_SPEC.md) defines the product 
 - Student practice, unique usage counting, progress, resumable mocks, optional timers,
   frozen questions, scoring, and answer review.
 - Manual payments, secured review, lifetime grants, notifications, and audit.
+- Security and UX hardening, adversarial and end-to-end tests, durable retry recovery,
+  and repeated regression verification. See [PHASE8_REVIEW.md](PHASE8_REVIEW.md).
   Production deployment remains future work.
 
 ## Requirements
 
 JDK 21, Maven Wrapper (Maven 3.9.16), PostgreSQL 18. Spring Boot 3.5.16 manages
 dependencies; Flyway core and the PostgreSQL module are aligned at 11.20.3.
+Embedded Tomcat is explicitly patched to 10.1.60.
 H2 and Spring Security test support are test-only dependencies.
 
 ## Configuration
@@ -562,3 +565,42 @@ check; receipt parsing, authorization, bounded download and file-signature valid
 are covered by automated tests. Do not treat development approvals as financial
 evidence. Retry tests use a controlled clock, and receipt failures return explicit
 HTTP responses so servlet error dispatch cannot obscure the intended status.
+
+## Compressed Phase 8: security, UX and recovery
+
+See [PHASE8_REVIEW.md](PHASE8_REVIEW.md) for the threat model, adversarial evidence,
+dependency review, limitations and Phase 9 handoff. No production deployment is
+included. Existing content, entitlement and payment rules remain intact.
+
+Admin login allows ten attempts per direct peer per minute, with bounded local
+storage. Sessions expire after 30 minutes; cookies use HttpOnly and SameSite=Lax.
+Set `SESSION_COOKIE_SECURE=true` when serving through production HTTPS. CSP forbids
+scripts, framing and external resources. Error pages omit exception details and
+offer recovery links. Forwarded registration contacts are rejected.
+
+V13__notification_claim_ownership.sql adds a nullable outbox claim token. Completion
+is conditional on the current claim, preventing stale workers from overwriting a
+new attempt. Expired fifth attempts become manually retryable failures. Telegram
+retry-after is honored up to one hour. Business changes remain committed when a
+notification fails; ambiguous delivery may repeat a message.
+
+Adversarial imports cover MIME contradictions, unsafe ZIP names, expanded-size and
+part limits, malformed CSV and oversized cells. Admin pages include responsive
+overflow, touch targets, visible focus and useful empty states. English/Amharic
+keys and placeholders are checked together. Tomcat is patched to 10.1.60; no new
+library is added. Resolve Spring Boot support before production (see the review).
+
+Verification commands, with development secrets supplied only through environment:
+
+```powershell
+.\mvnw.cmd test
+.\mvnw.cmd package
+.\mvnw.cmd '-Dsurefire.runOrder=random' '-Dsurefire.runOrder.random.seed=8252026' test
+.\mvnw.cmd '-Dtest=PaymentPostgresIT,PostgresExamEngineIT' test
+```
+
+The automatic suite uses isolated test data and mocked Telegram transport. The
+explicit PostgreSQL scenarios roll back their writes; additive Flyway migrations
+remain applied. Optional human receipt verification requires a harmless real
+attachment and an eligible non-lifetime development account; never downgrade an
+existing account or fabricate inbound Telegram traffic to perform it.

@@ -23,6 +23,13 @@ public class QuestionFileParser {
   if(name==null || name.length()>200 || name.contains("/") || name.contains("\\") || name.chars().anyMatch(Character::isISOControl)) throw new InvalidFile("Use a plain filename of at most 200 characters.");
   String type=name.toLowerCase(Locale.ROOT).endsWith(".csv")?"CSV":name.toLowerCase(Locale.ROOT).endsWith(".xlsx")?"XLSX":"";
   if(type.isEmpty()) throw new InvalidFile("Only UTF-8 CSV and XLSX files are supported.");
+  String mime=file.getContentType();
+  if(mime!=null&&!mime.isBlank()) {
+   mime=mime.split(";",2)[0].strip().toLowerCase(Locale.ROOT);
+   var allowed=type.equals("CSV")?List.of("text/csv","text/plain","application/csv","application/vnd.ms-excel","application/octet-stream"):
+    List.of("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/octet-stream");
+   if(!allowed.contains(mime)) throw new InvalidFile("The file type does not match a CSV or XLSX upload.");
+  }
   if(file.isEmpty()||file.getSize()>MAX_BYTES) throw new InvalidFile("Upload a nonempty file of at most 2 MiB.");
   try(InputStream in=file.getInputStream()) {
    byte[] data=in.readNBytes(MAX_BYTES+1);
@@ -63,6 +70,7 @@ public class QuestionFileParser {
    while((entry=zip.getNextEntry())!=null) {
     if(++entries>1000) throw new InvalidFile("Workbook has too many parts.");
     String path=entry.getName().toLowerCase(Locale.ROOT);
+    if(path.startsWith("/")||path.contains("\\")||Arrays.asList(path.split("/")).contains("..")) throw new InvalidFile("Workbook contains an unsafe part path.");
     if(path.contains("vbaproject")||path.startsWith("xl/externallinks/")||path.startsWith("xl/embeddings/")) throw new InvalidFile("Macros, embedded objects, and external links are not supported.");
     int n; while((n=zip.read(buffer))!=-1) { expanded+=n; if(expanded>20L*1024*1024) throw new InvalidFile("Expanded workbook exceeds 20 MiB."); }
    }
