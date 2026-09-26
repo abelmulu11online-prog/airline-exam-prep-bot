@@ -4,7 +4,7 @@
 
 This document is the source of truth for subsequent development of the airline written-exam preparation platform. Read it completely before changing the project. Explicitly agreed requirement changes must be reflected here rather than silently changing product behavior.
 
-The current milestone is **Compressed Phase 8: Security, UX & Full Testing**, built on the verified compressed Phase 7 baseline. It hardens existing security boundaries, user guidance, imports and notification recovery, and adds adversarial, end-to-end and repeated regression verification. Registration, content, exam and payment business rules remain intact. Production deployment remains future work; PHASE8_REVIEW.md records evidence, limitations and the Phase 9 handoff.
+The current milestone is **Compressed Phase 9: Test Production Deployment & Operations**, built on verified Phase 8 baseline `c9518d2`. It prepares a free Render Docker deployment using Java 21, Supabase PostgreSQL Session Pooler and authenticated Telegram HTTPS webhooks. Registration, content, exam and payment business rules remain intact. Local polling remains supported. PRODUCTION_RUNBOOK.md describes deployment and operations; PHASE9_REVIEW.md distinguishes local evidence from pending live acceptance. Existing temporary test credentials remain unchanged and must be replaced before serious private/paid production.
 
 Requirements below are planned Version 1 capabilities unless labeled optional, future, or a decision to resolve. Implement only the structures needed by the active phase.
 
@@ -308,7 +308,7 @@ Never run `flyway clean`, `DROP DATABASE`, `DROP SCHEMA`, `TRUNCATE`, bulk row d
 
 ## 13. Deployment, operations, and recovery
 
-Keep the application lightweight and avoid unnecessary services, separate frontend hosting, and persistent local receipt storage. Hosting may eventually use a free application host plus free PostgreSQL or an available free VM. No provider is selected here. Cold-start delays from sleeping free hosting are acceptable during early testing.
+Keep the application lightweight and avoid unnecessary services, separate frontend hosting, and persistent local receipt storage. Phase 9 selects Render Free Docker hosting in Europe with Supabase PostgreSQL Session Pooler. Cold-start delays from sleeping free hosting are accepted; no self-ping or keep-awake mechanism is permitted.
 
 Expose only necessary health information through Actuator; do not publicly expose all management endpoints. Secure production Telegram webhook delivery appropriately and keep secrets out of URLs/logs where avoidable. Concrete production settings and provider/platform requirements must be checked in the relevant later phase.
 
@@ -521,3 +521,27 @@ Phase 1 delivers this document only. No implementation or operational verificati
   support and operational limitations in PHASE8_REVIEW.md for Phase 9.
 - No production deployment, DNS, HTTPS provisioning, production database or webhook
   is part of this phase. A live human receipt check remains optional.
+
+## 22. Compressed Phase 9 decisions
+
+- One explicit transport: enabled POLLING starts the existing worker; enabled
+  WEBHOOK exposes POST `/api/telegram/webhook`. Both use the same core handler.
+- Require the Telegram secret header, bound inbound JSON, preserve private-chat
+  and ownership checks, and exempt only the exact webhook POST from CSRF.
+  Process before ACK; use domain idempotency for retries without an in-memory queue.
+- Prod composes JDBC fields from environment, requires TLS, uses a small Hikari
+  pool, binds Render PORT on all interfaces and forces secure session cookies.
+- Flyway owns V1–V13 without modification. No Phase 9 migration. Inspect Supabase
+  before first startup; disable its unused Data API before creating app tables.
+  Unexpected schemas are not automatically baselined or overwritten.
+- Java 21 multistage Docker build runs isolated tests and uses a non-root runtime.
+  All durable state remains PostgreSQL or Telegram file IDs, never container files.
+- Environment-only scripts configure/inspect webhook, inspect database readiness,
+  back up public application data and restore only to explicitly selected empty
+  local drill databases. Runbook covers rollback and future credential rotation.
+- Keep current test credentials unchanged. HMAC replacement after registration
+  requires a planned identity migration. No paid-production readiness claim.
+- The Phase 9 request explicitly authorizes committing and pushing passing changes
+  to main, superseding section 16's default no-automatic-commit/push rule for this
+  phase. Pause at the specified Render and live Telegram human checkpoints.
+- Advanced/optional Phase 10 features remain out of scope.

@@ -76,6 +76,40 @@ class TelegramConfigurationTests {
     }
 
     @Test
+    void webhookModeNeverCreatesPollingWorker() {
+        contextRunner.withPropertyValues("telegram.bot.enabled=true", "telegram.bot.mode=WEBHOOK",
+                        "telegram.bot.token=123:fictional", "telegram.bot.webhook-secret=fictional-webhook-test")
+                .withBean(ObjectMapper.class, ObjectMapper::new)
+                .withBean(com.airlineprep.bot.settings.SettingsService.class, () -> mock(com.airlineprep.bot.settings.SettingsService.class))
+                .withBean(com.airlineprep.bot.payment.PaymentService.class, () -> mock(com.airlineprep.bot.payment.PaymentService.class))
+                .withBean(com.airlineprep.bot.practice.PracticeService.class, () -> mock(com.airlineprep.bot.practice.PracticeService.class))
+                .withBean(com.airlineprep.bot.mock.MockAttemptService.class, () -> mock(com.airlineprep.bot.mock.MockAttemptService.class))
+                .withBean(com.airlineprep.bot.practice.StudentProgressService.class, () -> mock(com.airlineprep.bot.practice.StudentProgressService.class))
+                .withBean(com.airlineprep.bot.user.RegistrationService.class, () -> mock(com.airlineprep.bot.user.RegistrationService.class))
+                .run(context -> assertThat(context).hasNotFailed().hasSingleBean(TelegramWebhookController.class)
+                        .hasSingleBean(TelegramUpdateHandler.class).doesNotHaveBean(TelegramLongPollingService.class));
+    }
+
+    @Test
+    void disabledWebhookModeHasNoInboundOrOutboundTransport() {
+        contextRunner.withPropertyValues("telegram.bot.enabled=false", "telegram.bot.mode=WEBHOOK")
+                .run(context -> assertThat(context).hasNotFailed().doesNotHaveBean(TelegramWebhookController.class)
+                        .doesNotHaveBean(TelegramLongPollingService.class).doesNotHaveBean(TelegramBotClient.class));
+    }
+
+    @Test
+    void webhookSecretValidationNeverEchoesRejectedValue(CapturedOutput output) {
+        new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ValidationAutoConfiguration.class))
+                .withUserConfiguration(PropertiesOnly.class)
+                .withPropertyValues("telegram.bot.enabled=true", "telegram.bot.token=123:fictional", "telegram.bot.mode=WEBHOOK",
+                        "telegram.bot.webhook-secret=invalid private marker")
+                .run(context -> assertThat(context).hasFailed());
+        assertThat(output.getAll()).doesNotContain("invalid private marker");
+        assertThat(new TelegramBotProperties(true,"123:fictional",TelegramBotProperties.Mode.WEBHOOK,"private-marker").toString())
+                .doesNotContain("private-marker");
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void enabledContextPollsThroughMockTransportAndStopsOnClose() throws Exception {
         HttpClient transport = mock(HttpClient.class);

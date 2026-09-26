@@ -16,3 +16,9 @@ Desktop.ini
 *.key
 *.p12
 *.pfx
+backups/
+logs/
+temp/
+receipts/
+*.dump
+*.backup

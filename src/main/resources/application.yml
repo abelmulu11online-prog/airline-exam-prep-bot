@@ -27,7 +27,8 @@ spring:
     check-template-location: false
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${PORT:${SERVER_PORT:8080}}
+  address: 0.0.0.0
   shutdown: graceful
   servlet:
     session:
@@ -67,6 +68,8 @@ telegram:
   bot:
     enabled: ${TELEGRAM_BOT_ENABLED:false}
     token: ${TELEGRAM_BOT_TOKEN:}
+    mode: ${TELEGRAM_MODE:POLLING}
+    webhook-secret: ${TELEGRAM_WEBHOOK_SECRET:}
 
 registration:
   phone-hmac-key: ${PHONE_IDENTITY_HMAC_KEY:}

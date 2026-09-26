@@ -58,7 +58,7 @@ class AdminWebTests extends IsolatedDatabaseSupport {
     @ParameterizedTest @ValueSource(strings={"/admin","/admin/settings","/admin/exam-types","/admin/categories"})
     void adminPagesRequireLogin(String path) throws Exception {
         mvc.perform(get(path)).andExpect(status().is3xxRedirection())
-            .andExpect(redirectedUrl("http://localhost/admin/login"));
+            .andExpect(redirectedUrl("/admin/login"));
     }
     @ParameterizedTest @ValueSource(strings={"/admin","/admin/settings","/admin/exam-types","/admin/categories",
         "/admin/exam-types/new","/admin/categories/new"})

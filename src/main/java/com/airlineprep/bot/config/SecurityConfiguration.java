@@ -20,6 +20,9 @@ public class SecurityConfiguration {
 
     @Bean @Order(1)
     SecurityFilterChain adminSecurity(HttpSecurity http) throws Exception {
+        var loginEntryPoint = new org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint("/admin/login");
+        // Preserve the browser's HTTPS origin behind TLS termination without trusting forwarded headers.
+        loginEntryPoint.setFavorRelativeUris(true);
         return http.securityMatcher("/admin", "/admin/**", "/assets/**")
                 .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/admin/login", "/assets/**").permitAll()
@@ -34,7 +37,7 @@ public class SecurityConfiguration {
                     .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"))
                     .referrerPolicy(policy -> policy.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER)))
                 .addFilterBefore(new LoginThrottleFilter(), org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
-                .exceptionHandling(errors -> errors.accessDeniedHandler((request,response,error) -> {
+                .exceptionHandling(errors -> errors.authenticationEntryPoint(loginEntryPoint).accessDeniedHandler((request,response,error) -> {
                     response.setStatus(403); response.setContentType("text/html;charset=UTF-8");
                     response.getWriter().write("<!doctype html><html lang=\"en\"><title>Action unavailable</title><h1>Action unavailable</h1><p>Your session may have expired. Sign in again, reload the form and try again.</p><a href=\"/admin/login\">Sign in</a></html>");
                 }))
@@ -47,7 +50,10 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(authorize -> authorize
                         .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/telegram/webhook").permitAll()
                         .anyRequest().denyAll())
+                .csrf(csrf -> csrf.ignoringRequestMatchers(
+                        new org.springframework.security.web.util.matcher.AntPathRequestMatcher("/api/telegram/webhook", "POST")))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)

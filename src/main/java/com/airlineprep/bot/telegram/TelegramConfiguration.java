@@ -16,6 +16,7 @@ public class TelegramConfiguration {
 
     @Configuration(proxyBeanMethods = false)
     @ConditionalOnProperty(prefix = "telegram.bot", name = "enabled", havingValue = "true")
+    @org.springframework.context.annotation.Import(TelegramWebhookController.class)
     static class EnabledBot {
 
         @Bean(destroyMethod = "shutdownNow")
@@ -49,9 +50,11 @@ public class TelegramConfiguration {
         }
 
         @Bean
+        @ConditionalOnProperty(prefix = "telegram.bot", name = "mode", havingValue = "POLLING", matchIfMissing = true)
         TelegramLongPollingService telegramLongPollingService(TelegramBotClient client,
                 TelegramUpdateHandler handler) {
             return new TelegramLongPollingService(client, handler);
         }
+
     }
 }

@@ -27,6 +27,14 @@ public class TelegramUpdateHandler {
     }
 
     public void handle(JsonNode update, String botUsername) throws InterruptedException {
+        handle(update, botUsername, false);
+    }
+
+    public void handleWebhook(JsonNode update, String botUsername) throws InterruptedException {
+        handle(update, botUsername, true);
+    }
+
+    private void handle(JsonNode update, String botUsername, boolean retryStorageFailure) throws InterruptedException {
         if (update == null || !update.isObject()) return;
         JsonNode callback = update.path("callback_query");
         JsonNode message = callback.isObject() ? callback.path("message") : update.path("message");
@@ -76,6 +84,7 @@ public class TelegramUpdateHandler {
                 log.debug("Telegram registration step sent");
             } else if(payments!=null&&!command.startsWith("/")) payments.message(senderId,message);
         } catch (DataAccessException | TransactionException exception) {
+            if (retryStorageFailure) throw exception;
             // Database exception details may contain private bind values.
             log.warn("Registration storage unavailable; user may retry /start");
             presenter.unavailable(chatId);

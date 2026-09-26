@@ -1,5 +1,35 @@
 # Airline Exam Preparation Bot
 
+## Compressed Phase 9: free test deployment
+
+See [PRODUCTION_RUNBOOK.md](PRODUCTION_RUNBOOK.md) for Render Docker / Supabase
+Session Pooler deployment, the exact environment inventory, secured Telegram
+webhooks, database preflight, backups, isolated restore, rollback and future
+credential rotation. [PHASE9_REVIEW.md](PHASE9_REVIEW.md) records verification and
+pending live checks. This is FREE TEST/BETA infrastructure with existing temporary
+test credentials, not a paid-production availability commitment.
+
+Production uses the `prod` profile and `TELEGRAM_MODE=WEBHOOK`; local development
+continues with `TELEGRAM_MODE=POLLING`. Do not run both for one bot. PORT overrides
+SERVER_PORT. Before deploying, disable Supabase's unused Data API and run the
+read-only schema check. Secrets belong only in process environment, existing
+ignored local configuration or Render secrets; Docker never copies local `.env`.
+
+```powershell
+.\mvnw.cmd test
+.\mvnw.cmd package
+docker build -t airline-exam-prep-bot:phase9 .
+# With existing private environment loaded securely:
+.\scripts\check-production-db.ps1
+.\scripts\configure-telegram-webhook.ps1 -PublicUrl https://YOUR-SERVICE.onrender.com
+.\scripts\check-telegram-webhook.ps1
+.\scripts\backup-production-db.ps1
+```
+
+No new dependency or migration is introduced. V1–V13 remain unchanged. Earlier
+phase sections below are historical implementation/verification records; their
+deployment exclusions describe their own phase boundaries.
+
 One Java 21 / Spring Boot application for Telegram exam preparation and a
 Thymeleaf admin website. [PROJECT_SPEC.md](PROJECT_SPEC.md) defines the product rules.
 
